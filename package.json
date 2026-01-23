@@ -1,0 +1,16 @@
+{
+  "name": "blooddonation",
+  "version": "1.0.0",
+  "description": "College Blood Donor Management System",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "install:all": "npm install && cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
