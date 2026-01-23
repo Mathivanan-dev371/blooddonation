@@ -9,6 +9,7 @@ import HospitalLogin from './pages/HospitalLogin';
 import HospitalRegisterRequest from './pages/HospitalRegisterRequest';
 import UserSelection from './pages/UserSelection';
 import HospitalRequests from './pages/HospitalRequests';
+import HospitalList from './pages/HospitalList';
 import Layout from './components/Layout';
 
 
@@ -48,6 +49,10 @@ function AppRoutes() {
       <Route
         path="/admin"
         element={<AdminPanel />}
+      />
+      <Route
+        path="/admin/hospitals"
+        element={<HospitalList />}
       />
       <Route
         path="/hospital"

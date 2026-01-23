@@ -6,6 +6,7 @@ interface RegisteredStudent {
   name: string;
   department: string;
   admissionNumber: string;
+  phoneNumber: string;
   bloodGroup: string;
   collegeName: string;
   email: string;
@@ -16,6 +17,7 @@ const Register = () => {
     name: '',
     department: '',
     admissionNumber: '',
+    phoneNumber: '',
     bloodGroup: '',
     collegeName: '',
     email: '',
@@ -39,26 +41,15 @@ const Register = () => {
   };
 
   const checkDuplicates = async () => {
-    // Check for duplicate admission number
+    // Check for duplicate admission number (registration_number in student_details)
     const { data: admissionData } = await supabase
-      .from('student_donors')
-      .select('admission_number')
-      .eq('admission_number', formData.admissionNumber)
-      .single();
+      .from('student_details')
+      .select('registration_number')
+      .eq('registration_number', formData.admissionNumber)
+      .maybeSingle();
 
     if (admissionData) {
       return 'A student with this admission number already exists';
-    }
-
-    // Check for duplicate email
-    const { data: emailData } = await supabase
-      .from('student_donors')
-      .select('email')
-      .eq('email', formData.email)
-      .single();
-
-    if (emailData) {
-      return 'A student with this email already exists';
     }
 
     return null;
@@ -90,38 +81,62 @@ const Register = () => {
         return;
       }
 
-      // Register with Supabase Auth
+      // 1. Sign Up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            role: 'STUDENT',
+          }
+        }
       });
 
-      if (authError) {
-        throw new Error(authError.message);
-      }
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Account creation failed.');
 
-      // Insert student details into database
-      const { error: insertError } = await supabase
-        .from('student_donors')
-        .insert({
-          user_id: authData.user?.id,
-          name: formData.name,
-          department: formData.department,
-          admission_number: formData.admissionNumber,
-          blood_group: formData.bloodGroup,
-          college_name: formData.collegeName,
+      const userId = authData.user.id;
+
+      // 2. Create the profile manually
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
           email: formData.email,
+          username: formData.name,
+          role: 'STUDENT',
+          is_active: true,
+          is_available: true
         });
 
-      if (insertError) {
-        throw new Error(insertError.message);
+      if (profileError) {
+        console.warn('Profile creation warning:', profileError);
       }
 
-      // Set success state and show registered details
+      // 3. Save student details including phone number
+      const { error: detailsError } = await supabase
+        .from('student_details')
+        .upsert({
+          user_id: userId,
+          name: formData.name,
+          registration_number: formData.admissionNumber,
+          phone_number: formData.phoneNumber,
+          department: formData.department,
+          blood_group: formData.bloodGroup,
+          year_semester: formData.collegeName,
+          college_name: formData.collegeName,
+          status: 'Active'
+        });
+
+      if (detailsError) throw detailsError;
+
+      // Set success state
       setRegisteredStudent({
         name: formData.name,
         department: formData.department,
         admissionNumber: formData.admissionNumber,
+        phoneNumber: formData.phoneNumber,
         bloodGroup: formData.bloodGroup,
         collegeName: formData.collegeName,
         email: formData.email,
@@ -129,17 +144,16 @@ const Register = () => {
       setIsSuccess(true);
 
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      console.error('Final Registration Error:', err);
+      setError(err.message || 'Registration failed. Please check your connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Success screen showing registered student details
   if (isSuccess && registeredStudent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Background elements */}
         <div className="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none">
           <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-green-100 rounded-full blur-[100px]"></div>
           <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-emerald-100 rounded-full blur-[100px]"></div>
@@ -152,68 +166,41 @@ const Register = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-3xl font-extrabold text-gray-900">
-              Registration Successful!
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Welcome to the BloodLine community
-            </p>
+            <h2 className="text-3xl font-extrabold text-gray-900">Registration Successful!</h2>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-              Your Registration Details
-            </h3>
-
+            <h3 className="text-lg font-bold text-gray-800 mb-6">Your Registration Details</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">Full Name</span>
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-gray-500">Full Name</span>
                 <span className="text-gray-900 font-semibold">{registeredStudent.name}</span>
               </div>
-
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">Department</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.department}</span>
-              </div>
-
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">Admission Number</span>
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-gray-500">Admission Number</span>
                 <span className="text-gray-900 font-semibold">{registeredStudent.admissionNumber}</span>
               </div>
-
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">Blood Group</span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700">
-                  {registeredStudent.bloodGroup}
-                </span>
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-gray-500">Phone Number</span>
+                <span className="text-gray-900 font-semibold">{registeredStudent.phoneNumber}</span>
               </div>
-
-              <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <span className="text-gray-500 font-medium">College</span>
-                <span className="text-gray-900 font-semibold text-right max-w-[200px]">{registeredStudent.collegeName}</span>
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-gray-500">Blood Group</span>
+                <span className="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700">{registeredStudent.bloodGroup}</span>
               </div>
-
-              <div className="flex justify-between items-center py-3">
-                <span className="text-gray-500 font-medium">Email</span>
+              <div className="flex justify-between py-3 border-b border-gray-100">
+                <span className="text-gray-500">College</span>
+                <span className="text-gray-900 font-semibold">{registeredStudent.collegeName}</span>
+              </div>
+              <div className="flex justify-between py-3">
+                <span className="text-gray-500">Email</span>
                 <span className="text-gray-900 font-semibold">{registeredStudent.email}</span>
               </div>
             </div>
 
             <div className="mt-8 space-y-3">
-              <Link
-                to="/login"
-                className="block w-full py-3 px-4 text-center text-sm font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
+              <Link to="/login" className="block w-full py-3 text-center text-sm font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-lg">
                 Proceed to Login
-              </Link>
-              <Link
-                to="/"
-                className="block w-full py-3 px-4 text-center text-sm font-semibold rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all duration-300"
-              >
-                Back to Home
               </Link>
             </div>
           </div>
@@ -224,228 +211,78 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Background elements */}
       <div className="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-red-100 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-rose-100 rounded-full blur-[100px]"></div>
       </div>
 
-      {/* Back button */}
-      <Link
-        to="/login"
-        className="absolute top-6 left-6 flex items-center space-x-2 text-gray-500 hover:text-red-600 transition-all duration-300 bg-gray-100/50 hover:bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm z-20"
-        title="Back to Login"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="text-sm font-semibold">Back</span>
-      </Link>
-
       <div className="relative z-10 max-w-xl w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
-            </svg>
-          </div>
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Student Registration
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Join our blood donation community
-          </p>
+          <h2 className="text-3xl font-extrabold text-gray-900">Student Registration</h2>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
               <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
                 <span>{error}</span>
               </div>
             )}
 
-            <div className="space-y-5">
-              {/* Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Full Name *
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  placeholder="Enter your full name"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.name}
-                  onChange={handleChange}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
+                <input name="name" type="text" required className="w-full border p-3 rounded-lg" value={formData.name} onChange={handleChange} />
               </div>
-
-              {/* Department */}
               <div>
-                <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Department *
-                </label>
-                <input
-                  id="department"
-                  name="department"
-                  type="text"
-                  required
-                  placeholder="e.g., Computer Science, Mechanical"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.department}
-                  onChange={handleChange}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Department *</label>
+                <input name="department" type="text" required className="w-full border p-3 rounded-lg" value={formData.department} onChange={handleChange} />
               </div>
-
-              {/* Admission Number */}
               <div>
-                <label htmlFor="admissionNumber" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Admission Number *
-                </label>
-                <input
-                  id="admissionNumber"
-                  name="admissionNumber"
-                  type="text"
-                  required
-                  placeholder="Enter your admission number"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.admissionNumber}
-                  onChange={handleChange}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Admission Number *</label>
+                <input name="admissionNumber" type="text" required className="w-full border p-3 rounded-lg" value={formData.admissionNumber} onChange={handleChange} />
               </div>
-
-              {/* Blood Group */}
               <div>
-                <label htmlFor="bloodGroup" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Blood Group *
-                </label>
-                <select
-                  id="bloodGroup"
-                  name="bloodGroup"
-                  required
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all bg-white"
-                  value={formData.bloodGroup}
-                  onChange={handleChange}
-                >
-                  <option value="">Select Blood Group</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                <input name="phoneNumber" type="tel" required placeholder="10-digit number" className="w-full border p-3 rounded-lg" value={formData.phoneNumber} onChange={handleChange} />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Blood Group *</label>
+                <select name="bloodGroup" required className="w-full border p-3 rounded-lg bg-white" value={formData.bloodGroup} onChange={handleChange}>
+                  <option value="">Select</option>
+                  <option value="A+">A+</option><option value="A-">A-</option>
+                  <option value="B+">B+</option><option value="B-">B-</option>
+                  <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                  <option value="O+">O+</option><option value="O-">O-</option>
                 </select>
               </div>
-
-              {/* College Name Dropdown */}
               <div>
-                <label htmlFor="collegeName" className="block text-sm font-semibold text-gray-700 mb-1">
-                  College Name *
-                </label>
-                <select
-                  id="collegeName"
-                  name="collegeName"
-                  required
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all bg-white"
-                  value={formData.collegeName}
-                  onChange={handleChange}
-                >
+                <label className="block text-sm font-semibold text-gray-700 mb-1">College *</label>
+                <select name="collegeName" required className="w-full border p-3 rounded-lg bg-white" value={formData.collegeName} onChange={handleChange}>
                   <option value="">Select College</option>
-                  {colleges.map((college) => (
-                    <option key={college} value={college}>
-                      {college}
-                    </option>
-                  ))}
+                  {colleges.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Email Address *
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  placeholder="Enter your email"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.email}
-                  onChange={handleChange}
-                />
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Email *</label>
+                <input name="email" type="email" required className="w-full border p-3 rounded-lg" value={formData.email} onChange={handleChange} />
               </div>
-
-              {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Password *
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  placeholder="Create a password (min. 6 characters)"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.password}
-                  onChange={handleChange}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
+                <input name="password" type="password" required className="w-full border p-3 rounded-lg" value={formData.password} onChange={handleChange} />
               </div>
-
-              {/* Confirm Password */}
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-1">
-                  Confirm Password *
-                </label>
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  placeholder="Confirm your password"
-                  className="block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                />
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Confirm Password *</label>
+                <input name="confirmPassword" type="password" required className="w-full border p-3 rounded-lg" value={formData.confirmPassword} onChange={handleChange} />
               </div>
             </div>
 
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all duration-300 shadow-lg hover:shadow-xl"
-              >
-                {loading ? (
-                  <span className="flex items-center space-x-2">
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Registering...</span>
-                  </span>
-                ) : (
-                  'Create Account'
-                )}
-              </button>
-            </div>
+            <button type="submit" disabled={loading} className="w-full py-3 px-4 font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 transition-all shadow-lg hover:shadow-xl">
+              {loading ? 'Registering...' : 'Create Account'}
+            </button>
           </form>
-
           <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-red-600 hover:text-red-500 transition-colors">
-              Sign in here
-            </Link>
+            Already have an account? <Link to="/login" className="font-semibold text-red-600">Sign in</Link>
           </p>
         </div>
       </div>

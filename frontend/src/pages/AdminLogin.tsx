@@ -78,14 +78,14 @@ const AdminLogin = () => {
                                 autoComplete="username"
                                 required
                                 className="appearance-none relative block w-full px-4 py-3 bg-white/5 border border-white/10 placeholder-slate-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all sm:text-sm"
-                                placeholder="Admin ID"
+                                placeholder="Username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                         </div>
                         <div>
                             <label htmlFor="password" className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1 ml-1">
-                                Password
+                                Access Key
                             </label>
                             <input
                                 id="password"
@@ -115,13 +115,6 @@ const AdminLogin = () => {
                                     <span>Verifying...</span>
                                 </span>
                             ) : 'Sign in to Dashboard'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate('/admin')}
-                            className="w-full flex justify-center py-3 px-4 border-2 border-white/10 text-sm font-bold rounded-xl text-slate-300 bg-transparent hover:bg-white/5 focus:outline-none transition-all"
-                        >
-                            Proceed without Login (Demo)
                         </button>
                     </div>
                 </form>

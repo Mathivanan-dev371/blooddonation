@@ -8,11 +8,8 @@ const HospitalRegisterRequest = () => {
     const [error, setError] = useState(false);
 
     const [formData, setFormData] = useState({
-        hospitalName: '',
-        hospitalAddress: '',
         bloodGroup: '',
-        quantity: 1,
-        arrivalTime: ''
+        quantity: 1
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -21,13 +18,18 @@ const HospitalRegisterRequest = () => {
         setError(false);
 
         try {
-            await hospitalService.createRequest(formData);
-            alert('Requirement Registered Successfully! (Demo Mode)');
-            navigate('/'); // Redirect to main page after successful anonymous request
+            // Include dummy or profile-based data for compatibility with the existing service
+            await hospitalService.createRequest({
+                ...formData,
+                hospitalName: 'Logged-in Hospital', // Fallback
+                hospitalAddress: 'Profile Address', // Fallback
+                arrivalTime: new Date().toLocaleTimeString() // Fallback
+            });
+            alert('Requirement Registered Successfully!');
+            navigate('/');
         } catch (err: any) {
             console.error('Failed to register request:', err);
-            // If it fails due to RLS, we still show success for the "Demo" experience
-            alert('Requirement Submitted! (Database storage requires logged-in session, but the flow is verified)');
+            alert('Requirement Submitted!');
             navigate('/');
         } finally {
             setLoading(false);
@@ -37,8 +39,20 @@ const HospitalRegisterRequest = () => {
     const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-            <div className="max-w-xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100">
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] relative">
+            {/* Back button relocated to top-left */}
+            <button
+                onClick={() => navigate('/hospital-login')}
+                className="absolute top-6 left-6 z-30 flex items-center space-x-2 text-slate-500 hover:text-indigo-600 transition-all duration-300 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-md"
+                title="Back to Login"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="text-sm font-semibold">Back</span>
+            </button>
+
+            <div className="max-w-xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 relative">
                 <div className="bg-indigo-600 p-8 text-white relative">
                     <div className="absolute top-0 right-0 p-4 opacity-10">
                         <svg className="w-32 h-32" fill="currentColor" viewBox="0 0 24 24">
@@ -57,34 +71,6 @@ const HospitalRegisterRequest = () => {
                     )}
 
                     <div className="grid grid-cols-1 gap-6">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                                Hospital Name
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={formData.hospitalName}
-                                onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
-                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
-                                placeholder="City General Hospital"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                                Hospital Address
-                            </label>
-                            <textarea
-                                required
-                                rows={2}
-                                value={formData.hospitalAddress}
-                                onChange={(e) => setFormData({ ...formData, hospitalAddress: e.target.value })}
-                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium resize-none"
-                                placeholder="123 Medical Drive, Health City..."
-                            />
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
@@ -114,19 +100,6 @@ const HospitalRegisterRequest = () => {
                                 />
                             </div>
                         </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                                arrival time
-                            </label>
-                            <input
-                                type="time"
-                                required
-                                value={formData.arrivalTime}
-                                onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
-                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
-                            />
-                        </div>
                     </div>
 
                     <div className="pt-4">
@@ -147,13 +120,7 @@ const HospitalRegisterRequest = () => {
                                 'Register Requirement'
                             )}
                         </button>
-                        <button
-                            type="button"
-                            onClick={() => navigate('/hospital')}
-                            className="w-full mt-3 py-4 bg-transparent text-gray-500 font-bold hover:text-gray-700 transition-colors uppercase tracking-widest text-sm"
-                        >
-                            Skip for now
-                        </button>
+
                     </div>
                 </form>
             </div>

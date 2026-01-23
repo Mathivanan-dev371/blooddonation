@@ -7,6 +7,7 @@ DROP FUNCTION IF EXISTS public.handle_new_user();
 
 DROP TABLE IF EXISTS public.donation_attempts;
 DROP TABLE IF EXISTS public.hospital_requests;
+DROP TABLE IF EXISTS public.student_donors;
 DROP TABLE IF EXISTS public.student_details;
 DROP TABLE IF EXISTS public.profiles;
 
@@ -32,7 +33,7 @@ CREATE TABLE public.profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create Student Details Table
+-- Create Student Details Table (legacy)
 CREATE TABLE public.student_details (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
@@ -45,6 +46,21 @@ CREATE TABLE public.student_details (
   department TEXT NOT NULL,
   year_semester TEXT NOT NULL, -- Combined year and semester
   status TEXT DEFAULT 'Active', -- Added status
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create Student Donors Table (new simplified registration)
+CREATE TABLE public.student_donors (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  name TEXT NOT NULL,
+  department TEXT NOT NULL,
+  admission_number TEXT UNIQUE NOT NULL,
+  blood_group TEXT NOT NULL,
+  college_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  is_available BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -79,6 +95,7 @@ CREATE TABLE public.donation_attempts (
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.student_details ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_donors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hospital_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.donation_attempts ENABLE ROW LEVEL SECURITY;
 
@@ -100,6 +117,16 @@ ON public.student_details FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can insert their own student details" 
 ON public.student_details FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Student Donors: Viewable by everyone, insertable/editable by owner
+CREATE POLICY "Student donors are viewable by everyone" 
+ON public.student_donors FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own student donor record" 
+ON public.student_donors FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own student donor record" 
+ON public.student_donors FOR UPDATE USING (auth.uid() = user_id);
 
 -- Hospital Requests
 CREATE POLICY "Hospital requests are viewable by everyone" 
