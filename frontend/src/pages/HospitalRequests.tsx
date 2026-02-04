@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { hospitalService, userService } from '../services/api';
+import { hospitalService, userService, requirementsService } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
+
 
 const HospitalRequests = () => {
   const [requests, setRequests] = useState<any[]>([]);
+  const [arrangedRequirements, setArrangedRequirements] = useState<any[]>([]);
   const [donors, setDonors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -21,6 +23,7 @@ const HospitalRequests = () => {
 
   useEffect(() => {
     loadRequests();
+    loadArrangedRequirements();
   }, []);
 
   useEffect(() => {
@@ -40,6 +43,16 @@ const HospitalRequests = () => {
     }
   };
 
+  const loadArrangedRequirements = async () => {
+    try {
+      const data = await requirementsService.getAll();
+      const arranged = (data || []).filter((req: any) => req.status === 'Arranged');
+      setArrangedRequirements(arranged);
+    } catch (error) {
+      console.error('Failed to load arranged requirements:', error);
+    }
+  };
+
   const loadDonors = async () => {
     try {
       const data = await userService.getDonors(filters);
@@ -54,7 +67,7 @@ const HospitalRequests = () => {
       await hospitalService.createRequest({
         bloodGroup: newRequest.bloodGroup,
         quantity: newRequest.quantity,
-        hospitalName: 'Generic Request', // Placeholder for modal creation
+        hospitalName: 'Generic Request',
         hospitalAddress: 'N/A',
         arrivalTime: new Date().toISOString()
       });
@@ -96,23 +109,90 @@ const HospitalRequests = () => {
     }
   };
 
+  const getTimeSinceActive = (lastActive: string) => {
+    if (!lastActive) return 'Unknown';
+    const diff = Date.now() - new Date(lastActive).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
   if (loading) {
     return <div className="text-center py-12">Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Arranged Blood Requirements Section */}
+      {arrangedRequirements.length > 0 && (
+        <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 backdrop-blur-md rounded-3xl border border-emerald-700/50 overflow-hidden shadow-2xl">
+          <div className="p-6 border-b border-emerald-700/50 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-black text-emerald-300 uppercase tracking-widest">Arranged Blood Requirements</h2>
+            </div>
+            <span className="bg-emerald-700/30 text-emerald-300 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-600/30">
+              {arrangedRequirements.length} Fulfilled
+            </span>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {arrangedRequirements.map((req) => (
+                <div key={req.id} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-emerald-700/30 p-5 hover:border-emerald-600/50 transition-all">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold text-sm ring-2 ring-emerald-500/30">
+                        {req.bloodGroup}
+                      </span>
+                      <div>
+                        <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Arranged</p>
+                        <p className="text-xs text-slate-500">#{req.id.slice(0, 8)}</p>
+                      </div>
+                    </div>
+                    <span className="text-lg font-black text-emerald-400">{req.quantity} Units</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Patient Details</p>
+                      <p className="text-sm font-bold text-white">{req.patientName || 'Unknown'}</p>
+                      <p className="text-xs text-slate-400">{req.treatmentType || 'Emergency'}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Contact</p>
+                      <p className="text-xs font-mono text-slate-300">{req.contactNumber || 'No Contact'}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-700/50">
+                      <p className="text-[10px] text-slate-500">Arranged {getTimeSinceActive(req.createdAt)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Hospital Requests</h1>
+        <h1 className="text-3xl font-bold text-gray-900 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-lg inline-block">Hospital Requests</h1>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 shadow-lg"
         >
           Create Request
         </button>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Filter Available Donors</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -158,11 +238,11 @@ const HospitalRequests = () => {
         )}
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">My Requests ({requests.length})</h2>
         <div className="space-y-4">
           {requests.map((request) => (
-            <div key={request.id} className="border rounded-lg p-4">
+            <div key={request.id} className="border rounded-lg p-4 bg-white/50">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="font-bold text-lg text-indigo-800">
@@ -251,6 +331,7 @@ const HospitalRequests = () => {
         </div>
       </div>
 
+      {/* Modals are kept inside the relative z-stack to appear above background */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">

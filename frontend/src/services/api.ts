@@ -466,4 +466,50 @@ export const hospitalService = {
   },
 };
 
+export const requirementsService = {
+  create: async (data: { hospitalName: string, bloodGroup: string, quantity: number, contactNumber?: string, patientName: string, treatmentType: string }) => {
+    const { data: result, error } = await supabase
+      .from('blood_requirements')
+      .insert({
+        hospital_name: data.hospitalName,
+        contact_number: data.contactNumber,
+        patient_name: data.patientName,
+        treatment_type: data.treatmentType,
+        blood_group: data.bloodGroup,
+        quantity: data.quantity,
+        status: 'Pending'
+      })
+      .select()
+      .single();
+    if (error) handleError(error);
+    return result;
+  },
+  getAll: async () => {
+    const { data, error } = await supabase
+      .from('blood_requirements')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) handleError(error);
+    return (data || []).map((item: any) => ({
+      ...item,
+      hospitalName: item.hospital_name,
+      contactNumber: item.contact_number,
+      patientName: item.patient_name,
+      treatmentType: item.treatment_type,
+      bloodGroup: item.blood_group,
+      createdAt: item.created_at
+    }));
+  },
+  updateStatus: async (id: string, status: string) => {
+    const { data, error } = await supabase
+      .from('blood_requirements')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) handleError(error);
+    return data;
+  }
+};
+
 export default supabase;

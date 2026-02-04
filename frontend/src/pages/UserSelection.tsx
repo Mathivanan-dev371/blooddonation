@@ -47,58 +47,66 @@ const UserSelection = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-red-100 rounded-full blur-[100px]"></div>
-                <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-blue-100 rounded-full blur-[100px]"></div>
+        <div className="min-h-screen relative overflow-hidden">
+            {/* Fixed Background Image */}
+            <div className="fixed inset-0 z-0">
+                <div
+                    className="absolute inset-0 bg-bottom bg-no-repeat bg-cover"
+                    style={{
+                        backgroundImage: 'url(https://www.sonatech.ac.in/photo-gallery/campus/images/college-entrance.jpg)',
+                    }}
+                ></div>
+                {/* Minimal overlay to ensure text is just readable enough, prioritizing background visibility */}
+                <div className="absolute inset-0 bg-white/25"></div>
             </div>
 
-            <div className="relative z-10 w-full max-w-6xl text-center space-y-12">
-                <div className="space-y-4">
-                    <h1 className="text-5xl font-black text-gray-900 tracking-tight">
-                        Welcome to <span className="text-red-600">BloodLine</span>
-                    </h1>
-                    <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        A centralized platform connecting donors, hospitals, and lives.
-                        Please select your portal to continue.
-                    </p>
-                </div>
+            <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+                <div className="w-full max-w-6xl text-center space-y-12">
+                    <div className="space-y-4">
+                        <h1 className="text-5xl font-black text-gray-900 tracking-tight bg-white/80 backdrop-blur-md px-8 py-4 rounded-2xl inline-block shadow-lg">
+                            Welcome to <span className="text-red-600">BloodLine</span>
+                        </h1>
+                        <p className="text-xl text-gray-900 max-w-2xl mx-auto bg-white/70 backdrop-blur-md px-6 py-3 rounded-xl font-bold shadow-md">
+                            A centralized platform connecting donors, hospitals, and lives.
+                            Please select your portal to continue.
+                        </p>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-                    {roles.map((role) => (
-                        <button
-                            key={role.id}
-                            onClick={() => navigate(role.path)}
-                            className="group relative flex flex-col items-center p-8 bg-white border border-gray-100 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left"
-                        >
-                            <div className={`p-4 rounded-2xl bg-gradient-to-br ${role.color} text-white mb-6 transform group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
-                                {role.icon}
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
-                                {role.title}
-                            </h3>
-                            <p className="text-gray-500 leading-relaxed text-center">
-                                {role.description}
-                            </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                        {roles.map((role) => (
+                            <button
+                                key={role.id}
+                                onClick={() => navigate(role.path)}
+                                className="group relative flex flex-col items-center p-8 bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left"
+                            >
+                                <div className={`p-4 rounded-2xl bg-gradient-to-br ${role.color} text-white mb-6 transform group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
+                                    {role.icon}
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
+                                    {role.title}
+                                </h3>
+                                <p className="text-gray-500 leading-relaxed text-center">
+                                    {role.description}
+                                </p>
 
-                            <div className="mt-8 flex items-center text-sm font-bold text-red-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                                Get Started
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </div>
+                                <div className="mt-8 flex items-center text-sm font-bold text-red-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                                    Get Started
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
 
-                            {/* Decorative corner */}
-                            <div className="absolute top-0 right-0 p-4">
-                                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${role.color} opacity-5 group-hover:scale-[10] transition-transform duration-700 pointer-events-none`}></div>
-                            </div>
-                        </button>
-                    ))}
-                </div>
+                                {/* Decorative corner */}
+                                <div className="absolute top-0 right-0 p-4">
+                                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${role.color} opacity-5 group-hover:scale-[10] transition-transform duration-700 pointer-events-none`}></div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
 
-                <div className="pt-12 text-gray-400 text-sm font-medium">
-                    &copy; 2026 BloodLine Management System. All rights reserved.
+                    <div className="pt-1 text-gray-900 text-sm font-bold bg-white/60 backdrop-blur-md px-3 py-3 rounded-xl inline-block shadow-sm">
+                        &copy;SONA INSTITUITIONS.All rights reserved.
+                    </div>
                 </div>
             </div>
         </div>

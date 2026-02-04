@@ -26,17 +26,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-
+    <div className="min-h-screen relative overflow-hidden bg-slate-50">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="absolute top-6 left-6 flex items-center space-x-2 text-gray-500 hover:text-red-600 transition-all duration-300 bg-gray-100/50 hover:bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm"
+          className="fixed top-6 left-6 flex items-center space-x-2 text-slate-500 hover:text-red-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md z-50"
           title="Back to Selection"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,62 +38,92 @@ const Login = () => {
           </svg>
           <span className="text-sm font-semibold">Back</span>
         </Link>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
-              {error}
+
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+          <div>
+            <div className="flex justify-center mb-2">
+              <div className="h-12 w-12 bg-red-100 rounded-xl flex items-center justify-center text-red-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+              </div>
             </div>
-          )}
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="identifier" className="sr-only">
-                Email or Admission Number
-              </label>
-              <input
-                id="identifier"
-                name="identifier"
-                type="text"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-t-xl focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-all"
-                placeholder="Email or Admission Number"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-b-xl focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-all"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+            <h2 className="mt-2 text-center text-3xl font-black text-gray-900 tracking-tight">
+              Student Login
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Access your donor profile and history
+            </p>
           </div>
 
-          <div className="space-y-3">
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-          <p className="mt-4 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link to="/register" className="font-medium text-red-600 hover:text-red-500">
-              Register here
-            </Link>
-          </p>
-        </form>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-2xl text-sm font-bold shadow-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="identifier" className="block text-sm font-medium text-gray-700 ml-1 mb-1">
+                  Email or Admission Number
+                </label>
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  autoComplete="email"
+                  required
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-all"
+                  placeholder="2021CS001"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 ml-1 mb-1">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm transition-all"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-2xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 shadow-lg shadow-red-200 transition-all transform hover:-translate-y-0.5 active:scale-95 tracking-wide uppercase"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : 'Sign in'}
+              </button>
+            </div>
+
+            <div className="text-center pt-2">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link to="/register" className="font-bold text-red-600 hover:text-red-500 transition-colors">
+                  Register here
+                </Link>
+              </p>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
