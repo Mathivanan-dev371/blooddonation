@@ -400,7 +400,7 @@ export const donationService = {
 };
 
 export const hospitalService = {
-  createRequest: async (data: { bloodGroup: string, quantity: number, hospitalName: string, hospitalAddress: string, arrivalTime: string, patientName?: string, phoneNumber?: string }, hospitalId?: string) => {
+  createRequest: async (data: { bloodGroup: string, quantity: number, hospitalName: string, hospitalAddress: string, arrivalTime: string, patientName?: string, phoneNumber?: string, patientAge?: number, purpose?: string }, hospitalId?: string) => {
     let userId = hospitalId;
 
     // If no hospitalId provided, try to get from Supabase auth (for real logged-in users)
@@ -423,7 +423,9 @@ export const hospitalService = {
         hospital_address: data.hospitalAddress,
         arrival_time: data.arrivalTime,
         patient_name: data.patientName,
-        phone_number: data.phoneNumber
+        phone_number: data.phoneNumber,
+        patient_age: data.patientAge,
+        purpose: data.purpose
       })
       .select()
       .single();
@@ -440,6 +442,8 @@ export const hospitalService = {
       hospitalAddress: req.hospital_address,
       arrivalTime: req.arrival_time,
       patientName: req.patient_name,
+      patientAge: req.patient_age,
+      purpose: req.purpose,
       contactNumber: req.phone_number,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
@@ -629,6 +633,14 @@ export const hospitalService = {
       .order('created_at', { ascending: false });
     if (error) handleError(error);
     return data || [];
+  },
+  deleteRequest: async (requestId: string) => {
+    const { error } = await supabase
+      .from('hospital_requests')
+      .delete()
+      .eq('id', requestId);
+    if (error) handleError(error);
+    return true;
   }
 };
 

@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminPanel from './pages/AdminPanel';
+import AdminRequestHistory from './pages/AdminRequestHistory';
 import AdminLogin from './pages/AdminLogin';
 import HospitalLogin from './pages/HospitalLogin';
 import HospitalRegisterRequest from './pages/HospitalRegisterRequest';
@@ -54,6 +55,10 @@ function AppRoutes() {
         element={<AdminPanel />}
       />
       <Route
+        path="/admin/history"
+        element={<AdminRequestHistory />}
+      />
+      <Route
         path="/admin/hospitals"
         element={<HospitalList />}
       />
@@ -86,8 +91,8 @@ function App() {
   return (
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <div className="fixed top-2 sm:top-5 left-2 sm:left-5 z-[100] pointer-events-none sm:pointer-events-auto">
-          <BrandLogo className="h-10 sm:h-14 w-auto drop-shadow-md brightness-100" />
+        <div className="fixed top-1.5 sm:top-2.5 left-3 sm:left-5 z-[150] pointer-events-none sm:pointer-events-auto flex items-center">
+          <BrandLogo className="h-7 sm:h-12 md:h-14 w-auto drop-shadow-md brightness-100" />
         </div>
         <AppRoutes />
       </Router>

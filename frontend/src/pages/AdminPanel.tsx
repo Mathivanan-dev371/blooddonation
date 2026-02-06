@@ -12,6 +12,7 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'requests' | 'registry'>('requests');
   const [sortOrder, setSortOrder] = useState<'none' | 'highest' | 'lowest'>('none');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Hospital Registry States
   const [registeredHospitals, setRegisteredHospitals] = useState<any[]>([]);
@@ -215,42 +216,48 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pb-12">
+    <div className="min-h-screen bg-slate-50 pb-12">
       {/* Header */}
-      <div className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700 sticky top-0 z-50 shadow-2xl">
+      <div className="bg-white/70 backdrop-blur-xl border-b border-purple-100 sticky top-0 z-50 shadow-sm relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-12">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4">
+            <div className="flex items-center space-x-4 sm:space-x-8">
               <button
                 onClick={() => navigate('/')}
-                className="p-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 transition-all border border-slate-600 ml-16"
+                className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-600 transition-all border border-purple-100 ml-28 sm:ml-36 md:ml-44"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               </button>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-black text-white uppercase tracking-tight">Admin Control</h1>
-                <p className="text-slate-400 text-[10px] font-bold tracking-widest mt-1">SCT BLOOD PORTAL</p>
+              <div className="block">
+                <h1 className="text-base sm:text-lg font-black text-slate-800 uppercase tracking-tight">Admin Control</h1>
+                <p className="text-purple-400 text-[10px] font-bold tracking-widest mt-0.5">SONA BLOODLINE</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <nav className="flex p-1 bg-slate-900/50 rounded-2xl border border-slate-700">
+            <div className="flex items-center space-x-4 relative">
+              <nav className="flex p-1 bg-purple-50/50 rounded-2xl border border-purple-100">
                 <button
                   onClick={() => setActiveTab('requests')}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'requests' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'requests' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400 hover:text-indigo-600'}`}
                 >
                   Requests
                 </button>
                 <button
                   onClick={() => setActiveTab('registry')}
-                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'registry' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'registry' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'text-slate-400 hover:text-indigo-600'}`}
                 >
                   Registry
+                </button>
+                <button
+                  onClick={() => navigate('/admin/history')}
+                  className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-all"
+                >
+                  History
                 </button>
               </nav>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[10px] uppercase tracking-wider"
+                className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl border border-red-100 transition-all font-black text-[10px] uppercase tracking-wider"
               >
                 Logout
               </button>
@@ -259,7 +266,7 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative">
         {activeTab === 'requests' ? (
           <div className="space-y-12">
             {/* Live Requirements */}
@@ -269,42 +276,51 @@ const AdminPanel = () => {
                   <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse"></span>
                   Live Requirements
                 </h2>
-                <span className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300">
+                <span className="px-3 py-1 bg-white border border-purple-100 rounded-lg text-[10px] font-bold text-indigo-600 shadow-sm">
                   {pendingRequests.length} Active
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {pendingRequests.map((req) => (
-                  <div key={req.id} className="bg-slate-800/50 backdrop-blur-md rounded-[2.5rem] p-6 border border-slate-700/50 shadow-xl flex flex-col justify-between group hover:border-indigo-500/30 transition-all duration-300">
+                  <div key={req.id} className="bg-white rounded-[2.5rem] p-6 border border-purple-100 shadow-xl shadow-purple-200/20 flex flex-col justify-between group hover:border-indigo-200 hover:shadow-2xl transition-all duration-300">
                     <div>
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex flex-col max-w-[70%]">
                           <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 italic">#{req.id.slice(0, 6)}</span>
-                          <h3 className="text-lg font-black text-white leading-tight uppercase line-clamp-1">{req.hospitalName}</h3>
+                          <h3 className="text-lg font-black text-slate-800 leading-tight uppercase line-clamp-1">{req.hospitalName}</h3>
                           <p className="text-xs text-slate-400 font-bold mt-1 uppercase">{req.contactNumber}</p>
                         </div>
-                        <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500/20 to-rose-500/20 border border-red-500/30 flex flex-col items-center justify-center shadow-lg">
-                          <span className="text-red-400 font-black text-lg">{req.bloodGroup}</span>
-                          <span className="text-[8px] font-black text-red-500/60 uppercase tracking-tighter mt-1">Group</span>
+                        <div className="h-14 w-14 rounded-2xl bg-purple-50 border border-purple-100 flex flex-col items-center justify-center shadow-sm">
+                          <span className="text-purple-600 font-black text-lg">{req.bloodGroup}</span>
+                          <span className="text-[8px] font-black text-purple-400 uppercase tracking-tighter mt-1">Group</span>
                         </div>
                       </div>
 
                       <div className="space-y-4 mb-8">
-                        <div className="flex items-center justify-between text-xs border-b border-slate-700/50 pb-3">
-                          <span className="text-slate-500 font-bold uppercase">Patient</span>
-                          <span className="text-slate-200 font-black">{req.patientName || 'Emergency'}</span>
+                        <div className="flex items-center justify-between text-xs border-b border-purple-50 pb-3">
+                          <span className="text-slate-400 font-bold uppercase">Patient</span>
+                          <span className="text-slate-700 font-black">
+                            {req.patientName || 'Emergency'}
+                            {req.patientAge ? ` (${req.patientAge}y)` : ''}
+                          </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs border-b border-slate-700/50 pb-3">
-                          <span className="text-slate-500 font-bold uppercase">Amount</span>
+                        {req.purpose && (
+                          <div className="flex items-center justify-between text-xs border-b border-purple-50 pb-3">
+                            <span className="text-slate-400 font-bold uppercase">Purpose</span>
+                            <span className="text-indigo-600 font-black uppercase tracking-tight">{req.purpose}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-xs border-b border-purple-50 pb-3">
+                          <span className="text-slate-400 font-bold uppercase">Amount</span>
                           <div className="text-right">
-                            <p className="text-slate-200 font-black">{req.quantity} Units</p>
-                            <p className="text-[10px] text-amber-500 font-bold mt-0.5">{getTimeSinceActive(req.createdAt)}</p>
+                            <p className="text-slate-700 font-black">{req.quantity} Units</p>
+                            <p className="text-[10px] text-amber-600 font-bold mt-0.5">{getTimeSinceActive(req.createdAt)}</p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500 font-bold uppercase tracking-wider">Status</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-widest ${req.status === 'Pending' ? 'bg-amber-500/10 text-amber-400' : 'bg-indigo-500/10 text-indigo-400'
+                          <span className="text-slate-400 font-bold uppercase tracking-wider">Status</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-widest ${req.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-indigo-50 text-indigo-600'
                             }`}>
                             {req.status === 'ASSIGNED' ? 'Approved' : req.status}
                           </span>
@@ -315,26 +331,26 @@ const AdminPanel = () => {
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <button
                         onClick={() => handleSendEmail(req)}
-                        className={`flex items-center justify-center py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${(req.status === 'Approved' || req.status === 'ASSIGNED') ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-300'
+                        className={`flex items-center justify-center py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${(req.status === 'Approved' || req.status === 'ASSIGNED') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           }`}
                       >
                         {(req.status === 'Approved' || req.status === 'ASSIGNED') ? 'Notify' : 'Approve'}
                       </button>
                       <button
                         onClick={() => handleViewResponses(req)}
-                        className="flex items-center justify-center py-3 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest"
+                        className="flex items-center justify-center py-3 bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-100 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-fuchsia-100 transition-all"
                       >
                         Scholars
                       </button>
                       <button
                         onClick={() => handleMarkArranged(req)}
-                        className="flex items-center justify-center py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest mt-1"
+                        className="flex items-center justify-center py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl font-black text-[10px] uppercase tracking-widest mt-1 hover:bg-emerald-100 transition-all"
                       >
                         Complete
                       </button>
                       <button
                         onClick={() => handleRejectRequest(req)}
-                        className="flex items-center justify-center py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest mt-1"
+                        className="flex items-center justify-center py-3 bg-rose-50 text-rose-500 border border-rose-100 rounded-2xl font-black text-[10px] uppercase tracking-widest mt-1 hover:bg-rose-100 transition-all"
                       >
                         Reject
                       </button>
@@ -349,29 +365,44 @@ const AdminPanel = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
                 <div className="flex items-center space-x-4">
                   <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Donor Registry</h2>
-                  <span className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-bold text-slate-300">
+                  <span className="px-3 py-1 bg-white border border-purple-100 rounded-lg text-[10px] font-bold text-indigo-600 shadow-sm">
                     {users.length} Registered
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Sort By Score:</span>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as any)}
-                    className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-[10px] font-black uppercase text-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer"
-                  >
-                    <option value="none">Default</option>
-                    <option value="highest">Highest Score</option>
-                    <option value="lowest">Lowest Score</option>
-                  </select>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="relative w-full sm:w-64">
+                    <input
+                      type="text"
+                      placeholder="Search Name / Reg No..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-white border border-purple-100 rounded-xl px-10 py-2.5 text-[10px] font-black uppercase text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono shadow-sm"
+                    />
+                    <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Sort By:</span>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as any)}
+                      className="bg-white border border-purple-100 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all cursor-pointer shadow-sm"
+                    >
+                      <option value="none">Default</option>
+                      <option value="highest">Highest Score</option>
+                      <option value="lowest">Lowest Score</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div className="hidden lg:block bg-slate-800/80 backdrop-blur-md rounded-[2.5rem] border border-slate-700 overflow-hidden shadow-2xl">
+              <div className="hidden lg:block bg-white rounded-[2.5rem] border border-purple-100 overflow-hidden shadow-xl shadow-purple-200/10">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-slate-700/50 border-b border-slate-600">
+                    <tr className="bg-purple-50/50 border-b border-purple-100">
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Blood</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Dept Details</th>
@@ -380,41 +411,49 @@ const AdminPanel = () => {
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-700/50">
+                  <tbody className="divide-y divide-purple-50">
                     {[...users]
+                      .filter(u => {
+                        const q = searchQuery.toLowerCase();
+                        return (
+                          u.studentDetails?.name?.toLowerCase().includes(q) ||
+                          u.studentDetails?.admissionNumber?.toLowerCase().includes(q) ||
+                          u.studentDetails?.phoneNumber?.includes(q)
+                        );
+                      })
                       .sort((a, b) => {
                         if (sortOrder === 'highest') return b.trustScore - a.trustScore;
                         if (sortOrder === 'lowest') return a.trustScore - b.trustScore;
                         return 0;
                       })
                       .map((u) => (
-                        <tr key={u.id} className="hover:bg-slate-700/20 transition-colors">
+                        <tr key={u.id} className="hover:bg-purple-50/30 transition-colors">
                           <td className="px-6 py-5">
-                            <p className="font-black text-white uppercase text-sm">{u.studentDetails?.name}</p>
-                            <p className="text-[10px] text-slate-500 font-bold mt-0.5">ID: {u.id.slice(0, 8)}</p>
+                            <p className="font-black text-slate-800 uppercase text-sm">{u.studentDetails?.name}</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-0.5 tracking-tight italic">ID: {u.id.slice(0, 8)}</p>
                           </td>
                           <td className="px-6 py-5">
-                            <span className="px-2 py-1 bg-red-500/20 text-red-500 rounded-lg font-black text-xs ring-1 ring-red-500/20">{u.studentDetails?.bloodGroup}</span>
+                            <span className="px-2 py-1 bg-red-50 text-red-500 rounded-lg font-black text-xs ring-1 ring-red-100">{u.studentDetails?.bloodGroup}</span>
                           </td>
                           <td className="px-6 py-5">
-                            <p className="text-xs font-black text-slate-300 uppercase leading-none">{u.studentDetails?.department}</p>
-                            <p className="text-[10px] text-slate-500 font-bold mt-1.5 uppercase tracking-tighter">{u.studentDetails?.admissionNumber}</p>
+                            <p className="text-xs font-black text-slate-600 uppercase leading-none">{u.studentDetails?.department}</p>
+                            <p className="text-[10px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">{u.studentDetails?.admissionNumber}</p>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black ${u.trustScore >= 70 ? 'bg-emerald-500/10 text-emerald-400' :
-                              u.trustScore >= 40 ? 'bg-amber-500/10 text-amber-400' :
-                                'bg-rose-500/10 text-rose-400'
+                            <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black ${u.trustScore >= 70 ? 'bg-emerald-50 text-emerald-600' :
+                              u.trustScore >= 40 ? 'bg-amber-50 text-amber-600' :
+                                'bg-rose-50 text-rose-500'
                               }`}>
                               {u.trustScore} pts
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <p className="text-xs font-black text-indigo-400">{u.studentDetails?.phoneNumber}</p>
+                            <p className="text-xs font-black text-indigo-600">{u.studentDetails?.phoneNumber}</p>
                           </td>
                           <td className="px-6 py-5 text-center">
                             <button
                               onClick={() => handleDeleteUser(u.id, u.studentDetails?.name || u.username)}
-                              className="p-2 hover:bg-red-500/10 text-slate-500 hover:text-red-500 transition-all rounded-lg"
+                              className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all rounded-lg"
                               title="Delete Account"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -431,6 +470,14 @@ const AdminPanel = () => {
               {/* Mobile Registry Grid */}
               <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[...users]
+                  .filter(u => {
+                    const q = searchQuery.toLowerCase();
+                    return (
+                      u.studentDetails?.name?.toLowerCase().includes(q) ||
+                      u.studentDetails?.admissionNumber?.toLowerCase().includes(q) ||
+                      u.studentDetails?.phoneNumber?.includes(q)
+                    );
+                  })
                   .sort((a, b) => {
                     if (sortOrder === 'highest') return b.trustScore - a.trustScore;
                     if (sortOrder === 'lowest') return a.trustScore - b.trustScore;
@@ -488,13 +535,13 @@ const AdminPanel = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Registration Form */}
-            <div className="bg-slate-800/50 backdrop-blur-xl p-10 rounded-[3rem] border border-slate-700 shadow-2xl h-fit">
-              <h2 className="text-xl font-black text-white uppercase tracking-tight mb-8">Register Hospital</h2>
+            <div className="bg-white p-10 rounded-[3rem] border border-purple-100 shadow-xl shadow-purple-200/10 h-fit">
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-8">Register Hospital</h2>
               <form onSubmit={handleRegisterHospital} className="space-y-6">
                 <input
                   type="text"
                   required
-                  className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-sm"
+                  className="w-full px-5 py-4 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-bold text-sm shadow-sm"
                   placeholder="Hospital Name"
                   value={registryForm.hospitalName}
                   onChange={(e) => setRegistryForm({ ...registryForm, hospitalName: e.target.value })}
@@ -502,7 +549,7 @@ const AdminPanel = () => {
                 <input
                   type="text"
                   required
-                  className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-sm"
+                  className="w-full px-5 py-4 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-bold text-sm shadow-sm"
                   placeholder="Location"
                   value={registryForm.location}
                   onChange={(e) => setRegistryForm({ ...registryForm, location: e.target.value })}
@@ -510,7 +557,7 @@ const AdminPanel = () => {
                 <input
                   type="email"
                   required
-                  className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-sm"
+                  className="w-full px-5 py-4 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-bold text-sm shadow-sm"
                   placeholder="Login Email"
                   value={registryForm.email}
                   onChange={(e) => setRegistryForm({ ...registryForm, email: e.target.value })}
@@ -518,7 +565,7 @@ const AdminPanel = () => {
                 <input
                   type="text"
                   required
-                  className="w-full px-5 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-mono text-sm tracking-widest"
+                  className="w-full px-5 py-4 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm tracking-widest shadow-sm"
                   placeholder="Create Password"
                   value={registryForm.password}
                   onChange={(e) => setRegistryForm({ ...registryForm, password: e.target.value })}
@@ -526,7 +573,7 @@ const AdminPanel = () => {
                 <button
                   type="submit"
                   disabled={processingRegistry}
-                  className="w-full py-5 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white rounded-3xl font-black text-xs uppercase tracking-widest shadow-xl transition-all h-16"
+                  className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-3xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all h-16"
                 >
                   {processingRegistry ? 'Processing...' : 'Add to Network'}
                 </button>
@@ -535,20 +582,20 @@ const AdminPanel = () => {
 
             {/* Registry List */}
             <div className="space-y-6">
-              <h2 className="text-sm font-black text-slate-400 uppercase px-2">Registered Network</h2>
+              <h2 className="text-sm font-black text-slate-400 uppercase px-2 tracking-widest">Registered Network</h2>
               <div className="grid grid-cols-1 gap-4 overflow-y-auto max-h-[600px] pr-2 custom-scrollbar">
                 {registeredHospitals.map((h) => (
-                  <div key={h.id} className="bg-slate-800/30 p-6 rounded-3xl border border-slate-700/50">
+                  <div key={h.id} className="bg-white p-6 rounded-3xl border border-purple-100 shadow-md">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h4 className="text-white font-black uppercase text-base">{h.hospital_name}</h4>
-                        <p className="text-[10px] text-indigo-400 font-bold uppercase mt-1">{h.location}</p>
+                        <h4 className="text-slate-800 font-black uppercase text-base">{h.hospital_name}</h4>
+                        <p className="text-[10px] text-indigo-500 font-bold uppercase mt-1 tracking-tight">{h.location}</p>
                       </div>
-                      <span className="px-2 py-1 bg-indigo-500/10 text-indigo-500 rounded text-[8px] font-black uppercase tracking-tighter">Active</span>
+                      <span className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[8px] font-black uppercase tracking-tighter">Active</span>
                     </div>
-                    <div className="p-4 bg-slate-900/50 rounded-2xl border border-slate-700/50">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Access Info</p>
-                      <p className="text-xs font-bold text-slate-300">{h.email}</p>
+                    <div className="p-4 bg-purple-50/30 rounded-2xl border border-purple-100/50">
+                      <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Access Info</p>
+                      <p className="text-xs font-bold text-indigo-900">{h.email}</p>
                     </div>
                   </div>
                 ))}

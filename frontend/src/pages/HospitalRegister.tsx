@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
 const HospitalRegister = () => {
     const [formData, setFormData] = useState({
@@ -53,126 +54,130 @@ const HospitalRegister = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f8faff] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-            <Link
-                to="/hospital-login"
-                className="absolute top-6 left-6 z-10 flex items-center space-x-2 text-slate-500 hover:text-indigo-600 transition-all duration-300 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="text-sm font-semibold">Back to Login</span>
-            </Link>
+        <div className="min-h-screen relative overflow-hidden font-sans">
+            <GlobalBackgroundSlideshow />
+            <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-            <div className="max-w-md w-full space-y-8 relative z-10">
-                <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-indigo-50">
-                    <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight">
-                        Hospital Registration
-                    </h2>
-                    <p className="mt-2 text-center text-sm text-slate-500 font-medium lowercase">
-                        Create a secure account for your medical facility
-                    </p>
+                <Link
+                    to="/hospital-login"
+                    className="absolute top-6 left-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Back to Login</span>
+                </Link>
 
-                    <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                        {error && (
-                            <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-2xl text-sm text-center font-semibold">
-                                {error}
-                            </div>
-                        )}
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                <div className="max-w-md w-full space-y-8 relative z-10">
+                    <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
+                        <h2 className="text-center text-2xl font-black text-slate-800 tracking-tight uppercase">
+                            Registration
+                        </h2>
+                        <p className="mt-2 text-center text-[10px] font-black text-purple-400 uppercase tracking-widest">
+                            Initialize Hospital Node
+                        </p>
+
+                        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+                            {error && (
+                                <div className="bg-rose-50 border border-rose-100 text-rose-600 px-4 py-3 rounded-2xl text-[10px] text-center font-black uppercase tracking-widest">
+                                    {error}
+                                </div>
+                            )}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                            Hospital
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold"
+                                            placeholder="Name"
+                                            value={formData.hospitalName}
+                                            onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                            Location
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold"
+                                            placeholder="City"
+                                            value={formData.location}
+                                            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                        Hospital Name
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                        Username
                                     </label>
                                     <input
                                         type="text"
                                         required
-                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                        placeholder="City General"
-                                        value={formData.hospitalName}
-                                        onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
+                                        className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold"
+                                        placeholder="Enter username"
+                                        value={formData.username}
+                                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                        Location
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                        Facility Email
                                     </label>
                                     <input
-                                        type="text"
+                                        type="email"
                                         required
-                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                        placeholder="Downtown"
-                                        value={formData.location}
-                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                        className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold"
+                                        placeholder="contact@network.org"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                            Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            required
+                                            className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold tracking-widest"
+                                            placeholder="••••"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                            Confirm
+                                        </label>
+                                        <input
+                                            type="password"
+                                            required
+                                            className="appearance-none relative block w-full px-5 py-3.5 bg-purple-50/30 border border-purple-100 placeholder-slate-400 text-slate-800 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all sm:text-sm font-bold tracking-widest"
+                                            placeholder="••••"
+                                            value={formData.confirmPassword}
+                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                    Username
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                    placeholder="city_general"
-                                    value={formData.username}
-                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                    Facility Email
-                                </label>
-                                <input
-                                    type="email"
-                                    required
-                                    className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                    placeholder="contact@hospital.org"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                        placeholder="••••••••"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                                        Confirm
-                                    </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-                                        placeholder="••••••••"
-                                        value={formData.confirmPassword}
-                                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-black rounded-2xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-100 transition-all duration-300 shadow-xl shadow-indigo-200 uppercase tracking-widest"
-                        >
-                            {loading ? 'Creating Account...' : 'Register Hospital'}
-                        </button>
-                    </form>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-3xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 shadow-xl shadow-indigo-100 active:scale-95 h-16 items-center"
+                            >
+                                {loading ? 'Initializing...' : 'Register Hospital'}
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

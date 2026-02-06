@@ -110,36 +110,36 @@ const HospitalList = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-900">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
+            <div className="min-h-screen flex items-center justify-center bg-[#F3F0FF]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 sm:px-6 py-8 sm:py-12 relative overflow-hidden">
+        <div className="min-h-screen bg-[#F3F0FF] px-4 sm:px-6 py-8 sm:py-12 relative overflow-hidden">
             {/* Background Orbs */}
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-200/50 rounded-full blur-[120px] pointer-events-none"></div>
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100/50 rounded-full blur-[120px] pointer-events-none"></div>
 
             <div className="max-w-5xl mx-auto relative z-10">
                 {/* Back Button */}
                 <Link
                     to="/admin"
-                    className="inline-flex items-center space-x-2 text-slate-400 hover:text-white transition-colors mb-6 sm:mb-8 group ml-16 sm:ml-20"
+                    className="inline-flex items-center space-x-2 text-purple-600 hover:text-indigo-600 transition-colors mb-6 sm:mb-8 group"
                 >
-                    <div className="p-2 rounded-lg bg-slate-800 group-hover:bg-slate-700 transition-colors">
+                    <div className="p-2.5 rounded-xl bg-purple-50 group-hover:bg-purple-100 transition-all border border-purple-100 shadow-sm">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                     </div>
-                    <span className="font-black text-[10px] sm:text-xs tracking-widest uppercase">Back to Control Center</span>
+                    <span className="font-black text-[10px] sm:text-xs tracking-widest uppercase ml-2">Control Center</span>
                 </Link>
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8 mb-8 sm:mb-12">
                     <div className="flex-1">
-                        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter mb-2 uppercase">Hospital Registry</h1>
-                        <p className="text-slate-400 font-bold text-sm sm:text-lg">Network Management Portal</p>
+                        <h1 className="text-3xl sm:text-5xl font-black text-slate-800 tracking-tighter mb-2 uppercase">Hospital Registry</h1>
+                        <p className="text-purple-400 font-black uppercase tracking-[0.2em] text-[10px] sm:text-xs">Institutional Network Management</p>
                     </div>
                     <button
                         onClick={() => showAddForm ? resetForm() : setShowAddForm(true)}
@@ -169,11 +169,11 @@ const HospitalList = () => {
                 {/* Unified Form */}
                 {showAddForm && (
                     <div className="mb-12 animate-in slide-in-from-top duration-500">
-                        <div className="bg-slate-800/80 backdrop-blur-2xl border border-slate-700 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
+                        <div className="bg-white/70 backdrop-blur-2xl border border-purple-100 rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl shadow-purple-200/20 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
 
-                            <h2 className="text-white font-black uppercase tracking-widest text-[10px] sm:text-xs mb-8 flex items-center">
-                                <span className={`w-2 h-2 rounded-full mr-3 ${editHospitalId ? 'bg-amber-500' : 'bg-red-500'}`}></span>
+                            <h2 className="text-slate-800 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-8 flex items-center">
+                                <span className={`w-2 h-2 rounded-full mr-3 ${editHospitalId ? 'bg-amber-500' : 'bg-red-600'}`}></span>
                                 {editHospitalId ? 'Update Operational Records' : 'New Strategic Enrollment'}
                             </h2>
 
@@ -212,7 +212,7 @@ const HospitalList = () => {
                                 </div>
                                 <button
                                     type="submit" disabled={isSubmitting}
-                                    className={`w-full sm:col-span-2 lg:col-span-1 ${editHospitalId ? 'bg-amber-500' : 'bg-white'} text-slate-900 px-6 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-xl h-[46px] disabled:opacity-50 text-[10px]`}
+                                    className={`w-full sm:col-span-2 lg:col-span-1 ${editHospitalId ? 'bg-amber-500' : 'bg-indigo-600'} text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-indigo-100 h-[52px] disabled:opacity-50 text-[10px]`}
                                 >
                                     {isSubmitting ? '...' : editHospitalId ? 'Apply Update' : 'Initialize'}
                                 </button>
@@ -225,19 +225,19 @@ const HospitalList = () => {
                     {hospitals.map((hospital) => (
                         <div
                             key={hospital.id}
-                            className={`bg-slate-800/40 backdrop-blur-md border rounded-[2rem] p-6 sm:p-8 hover:border-slate-600 transition-all group relative overflow-hidden ${editHospitalId === hospital.id ? 'border-amber-500/40 shadow-2xl shadow-amber-500/10' : 'border-slate-700/50'}`}
+                            className={`bg-white/70 backdrop-blur-md border rounded-[2rem] p-6 sm:p-8 hover:border-purple-200 transition-all group relative overflow-hidden shadow-xl shadow-purple-200/10 ${editHospitalId === hospital.id ? 'border-amber-500/40 ring-2 ring-amber-500/10' : 'border-purple-50'}`}
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 blur-[80px] group-hover:bg-red-500/10"></div>
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[80px] group-hover:bg-indigo-500/10"></div>
 
                             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                                 <div className="flex items-center space-x-4 sm:space-x-6">
-                                    <div className={`h-12 w-12 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center border transition-all ${editHospitalId === hospital.id ? 'bg-amber-500/20 border-amber-500/50' : 'bg-slate-700/50 border-slate-600'}`}>
-                                        <span className={`text-xl sm:text-2xl font-black ${editHospitalId === hospital.id ? 'text-amber-500' : 'text-red-500'}`}>
+                                    <div className={`h-12 w-12 sm:h-16 sm:w-16 rounded-2xl flex items-center justify-center border transition-all ${editHospitalId === hospital.id ? 'bg-amber-500/10 border-amber-500/30' : 'bg-purple-50 border-purple-100'}`}>
+                                        <span className={`text-xl sm:text-2xl font-black ${editHospitalId === hospital.id ? 'text-amber-500' : 'text-red-600'}`}>
                                             {hospital.name?.charAt(0) || 'H'}
                                         </span>
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-xl sm:text-2xl font-black text-white leading-tight mb-2 group-hover:text-red-400">
+                                        <h3 className="text-xl sm:text-2xl font-black text-slate-800 leading-tight mb-2 group-hover:text-red-500 transition-colors">
                                             {hospital.name}
                                         </h3>
                                         <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
@@ -253,20 +253,20 @@ const HospitalList = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between lg:justify-end gap-4 sm:gap-6 border-t lg:border-t-0 lg:border-l border-slate-700/50 pt-6 lg:pt-0 lg:pl-8">
+                                <div className="flex items-center justify-between lg:justify-end gap-4 sm:gap-6 border-t lg:border-t-0 lg:border-l border-purple-50 pt-6 lg:pt-0 lg:pl-8">
                                     <div className="flex items-center space-x-4">
-                                        <div className="hidden xs:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center bg-slate-900/50 rounded-xl border border-slate-700">
-                                            <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        <div className="hidden xs:flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center bg-purple-50 rounded-2xl border border-purple-100">
+                                            <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest mb-1 leading-none uppercase">Sector</p>
-                                            <p className="text-sm sm:text-base font-black text-slate-200">{hospital.location || 'Unknown'}</p>
+                                            <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1 leading-none">Sector</p>
+                                            <p className="text-sm sm:text-base font-black text-slate-700">{hospital.location || 'Unknown'}</p>
                                         </div>
                                     </div>
 
                                     <button
                                         onClick={() => handleEditClick(hospital)}
-                                        className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-slate-800 hover:bg-amber-500 text-slate-400 hover:text-white transition-all border border-slate-700 flex items-center justify-center shadow-lg"
+                                        className="h-12 w-12 sm:h-14 sm:w-14 rounded-[1.5rem] bg-purple-50 hover:bg-amber-500 text-purple-400 hover:text-white transition-all border border-purple-100 flex items-center justify-center shadow-sm"
                                     >
                                         <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                     </button>

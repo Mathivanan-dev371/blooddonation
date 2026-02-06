@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
 interface RegisteredStudent {
   name: string;
@@ -147,7 +148,7 @@ const Register = () => {
         email: formData.email,
       });
       setIsSuccess(true);
-      alert("verification mail is sent to your respective email,verify it !!");
+      alert("Verification mail is sent to your respective email, please verify it!");
 
     } catch (err: any) {
       console.error('Final Registration Error:', err);
@@ -159,56 +160,51 @@ const Register = () => {
 
   if (isSuccess && registeredStudent) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none">
-          <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-green-100 rounded-full blur-[100px]"></div>
-          <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-emerald-100 rounded-full blur-[100px]"></div>
-        </div>
+      <div className="min-h-screen relative overflow-hidden font-sans">
+        <GlobalBackgroundSlideshow />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-        <div className="relative z-10 max-w-xl w-full space-y-8">
-          <div className="text-center">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg mb-6 animate-bounce">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-3xl font-extrabold text-gray-900">Registration Successful!</h2>
-            <p className="mt-2 text-green-600 font-bold">verification mail is sent to your respective email, verify it !!</p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <h3 className="text-lg font-bold text-gray-800 mb-6">Your Registration Details</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-500">Full Name</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.name}</span>
+          <div className="relative z-10 max-w-xl w-full space-y-8">
+            <div className="text-center">
+              <div className="mx-auto w-24 h-24 bg-white/70 backdrop-blur-xl border border-purple-100 rounded-[2rem] flex items-center justify-center shadow-xl shadow-purple-200/20 mb-8 animate-pulse text-indigo-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-500">Admission Number</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.admissionNumber}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-500">Phone Number</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.phoneNumber}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-500">Blood Group</span>
-                <span className="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700">{registeredStudent.bloodGroup}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-500">College</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.collegeName}</span>
-              </div>
-              <div className="flex justify-between py-3">
-                <span className="text-gray-500">Email</span>
-                <span className="text-gray-900 font-semibold">{registeredStudent.email}</span>
-              </div>
+              <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tight">Access Granted!</h2>
+              <p className="mt-2 text-indigo-600 font-bold uppercase tracking-widest text-[10px]">Verification link dispatched to {registeredStudent.email}</p>
             </div>
 
-            <div className="mt-8 space-y-3">
-              <Link to="/login" className="block w-full py-3 text-center text-sm font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-lg">
-                Proceed to Login
-              </Link>
+            <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-purple-200/20 p-10 border border-purple-100">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Node Credentials</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between py-4 border-b border-purple-50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Scholar Name</span>
+                  <span className="text-sm font-black text-slate-800 uppercase leading-none">{registeredStudent.name}</span>
+                </div>
+                <div className="flex justify-between py-4 border-b border-purple-50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Admission ID</span>
+                  <span className="text-sm font-black text-slate-800 uppercase leading-none">{registeredStudent.admissionNumber}</span>
+                </div>
+                <div className="flex justify-between py-4 border-b border-purple-50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Phone Terminal</span>
+                  <span className="text-sm font-black text-slate-800 leading-none">{registeredStudent.phoneNumber}</span>
+                </div>
+                <div className="flex justify-between py-4 border-b border-purple-50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Blood Signature</span>
+                  <span className="px-3 py-1 rounded-xl text-xs font-black bg-red-50 text-red-600 border border-red-100">{registeredStudent.bloodGroup}</span>
+                </div>
+                <div className="flex justify-between py-4">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Identity Node</span>
+                  <span className="text-sm font-black text-slate-800 uppercase leading-none">{registeredStudent.collegeName}</span>
+                </div>
+              </div>
+
+              <div className="mt-10 pt-4">
+                <Link to="/login" className="block w-full py-5 text-center text-[10px] font-black uppercase tracking-[0.2em] rounded-[2rem] text-white bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all transform active:scale-95">
+                  Initialize Login
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -217,91 +213,106 @@ const Register = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full z-0 opacity-40 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-red-100 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-rose-100 rounded-full blur-[100px]"></div>
-      </div>
+    <div className="min-h-screen relative overflow-hidden font-sans">
+      <GlobalBackgroundSlideshow />
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-      <Link
-        to="/"
-        className="fixed top-6 right-6 flex items-center space-x-2 text-slate-500 hover:text-red-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md z-50"
-        title="Back to Selection"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        <span className="text-sm font-semibold">Back</span>
-      </Link>
+        <Link
+          to="/"
+          className="absolute top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+        </Link>
 
-      <div className="relative z-10 max-w-xl w-full space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Student Registration</h2>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2">
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name *</label>
-                <input name="name" type="text" required className="w-full border p-3 rounded-lg" value={formData.name} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Department *</label>
-                <input name="department" type="text" required className="w-full border p-3 rounded-lg" value={formData.department} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Admission Number *</label>
-                <input name="admissionNumber" type="text" required className="w-full border p-3 rounded-lg" value={formData.admissionNumber} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
-                <input name="phoneNumber" type="tel" required placeholder="10-digit number" className="w-full border p-3 rounded-lg" value={formData.phoneNumber} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Blood Group *</label>
-                <select name="bloodGroup" required className="w-full border p-3 rounded-lg bg-white" value={formData.bloodGroup} onChange={handleChange}>
-                  <option value="">Select</option>
-                  <option value="A+">A+</option><option value="A-">A-</option>
-                  <option value="B+">B+</option><option value="B-">B-</option>
-                  <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                  <option value="O+">O+</option><option value="O-">O-</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">College *</label>
-                <select name="collegeName" required className="w-full border p-3 rounded-lg bg-white" value={formData.collegeName} onChange={handleChange}>
-                  <option value="">Select College</option>
-                  {colleges.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Email *</label>
-                <input name="email" type="email" required className="w-full border p-3 rounded-lg" value={formData.email} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Password *</label>
-                <input name="password" type="password" required className="w-full border p-3 rounded-lg" value={formData.password} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Confirm Password *</label>
-                <input name="confirmPassword" type="password" required className="w-full border p-3 rounded-lg" value={formData.confirmPassword} onChange={handleChange} />
-              </div>
+        <div className="relative z-10 max-w-2xl w-full">
+          <div className="text-center mb-10">
+            <div className="inline-block px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full mb-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Scholar Enrollment Pipeline</span>
             </div>
+            <h2 className="text-4xl font-black text-slate-800 uppercase tracking-tighter">New Node <span className="text-indigo-600">Initiation</span></h2>
+            <p className="mt-2 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Provide your credentials to join the network</p>
+          </div>
 
-            <button type="submit" disabled={loading} className="w-full py-3 px-4 font-bold rounded-lg text-white bg-gradient-to-r from-red-500 to-rose-600 transition-all shadow-lg hover:shadow-xl">
-              {loading ? 'Registering...' : 'Create Account'}
-            </button>
-          </form>
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Already have an account? <Link to="/login" className="font-semibold text-red-600">Sign in</Link>
-          </p>
+          <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-purple-200/20 p-10 border border-purple-100 relative overflow-hidden group">
+            <form className="space-y-8" onSubmit={handleSubmit}>
+              {error && (
+                <div className="bg-red-50 border border-red-100 text-red-600 px-5 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center shadow-sm">
+                  <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {error}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Legal Name</label>
+                  <input name="name" type="text" required placeholder="Full Name" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.name} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
+                  <input name="department" type="text" required placeholder="e.g., Computer Science" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.department} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admission ID</label>
+                  <input name="admissionNumber" type="text" required placeholder="Registration No" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.admissionNumber} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Terminal</label>
+                  <input name="phoneNumber" type="tel" required placeholder="10 Digits" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.phoneNumber} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Blood Signature</label>
+                  <select name="bloodGroup" required className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-black text-sm text-slate-800 cursor-pointer appearance-none" value={formData.bloodGroup} onChange={handleChange}>
+                    <option value="">Signature</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Institutional Host</label>
+                  <select name="collegeName" required className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-black text-sm text-slate-800 cursor-pointer appearance-none" value={formData.collegeName} onChange={handleChange}>
+                    <option value="">Host College</option>
+                    {colleges.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Routing (Email)</label>
+                  <input name="email" type="email" required placeholder="scholar@email.com" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.email} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Access Key</label>
+                  <input name="password" type="password" required placeholder="••••••••" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800 tracking-widest" value={formData.password} onChange={handleChange} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Key</label>
+                  <input name="confirmPassword" type="password" required placeholder="••••••••" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800 tracking-widest" value={formData.confirmPassword} onChange={handleChange} />
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button type="submit" disabled={loading} className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-indigo-100 transition-all transform active:scale-95 h-16 flex items-center justify-center">
+                  {loading ? (
+                    <span className="flex items-center space-x-3">
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Configuring Node...</span>
+                    </span>
+                  ) : 'Initiate Enrollment'}
+                </button>
+              </div>
+            </form>
+            <div className="mt-8 text-center pt-8 border-t border-purple-50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Already integrated? <Link to="/login" className="text-indigo-600 hover:text-indigo-700 transition-all ml-1 underline decoration-2 underline-offset-4">Authorize Entry</Link>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

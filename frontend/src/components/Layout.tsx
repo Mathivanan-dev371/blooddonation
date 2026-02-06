@@ -15,12 +15,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-lg">
+    <div className="min-h-screen">
+      <nav className="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-[100] border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 md:h-20">
             <div className="flex">
-              <div className="flex-shrink-0 flex items-center ml-12 sm:ml-16">
+              <div className="flex-shrink-0 flex items-center ml-28 sm:ml-44">
                 <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">BloodLine</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
