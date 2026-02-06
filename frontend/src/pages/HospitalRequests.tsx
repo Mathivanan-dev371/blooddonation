@@ -1,466 +1,227 @@
 import { useState, useEffect } from 'react';
-import { hospitalService, userService, requirementsService } from '../services/api';
-import { formatDate } from '../utils/dateUtils';
-
+import { hospitalService } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const HospitalRequests = () => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<any[]>([]);
-  const [arrangedRequirements, setArrangedRequirements] = useState<any[]>([]);
-  const [donors, setDonors] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDonorsModal, setShowDonorsModal] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [loadingRequests, setLoadingRequests] = useState(true);
   const [newRequest, setNewRequest] = useState({
     bloodGroup: '',
     quantity: 1,
-  });
-  const [filters, setFilters] = useState({
-    bloodGroup: '',
-    available: 'true',
-    minTrustScore: '50',
+    patientName: '',
+    phoneNumber: '',
   });
 
   useEffect(() => {
-    loadRequests();
-    loadArrangedRequirements();
-  }, []);
+    fetchRequests();
+  }, [user]);
 
-  useEffect(() => {
-    if (filters.bloodGroup) {
-      loadDonors();
-    }
-  }, [filters]);
-
-  const loadRequests = async () => {
+  const fetchRequests = async () => {
     try {
-      const data = await hospitalService.getMyRequests();
-      setRequests(data || []);
+      setLoadingRequests(true);
+      const data = await hospitalService.getMyRequests(user?.id);
+
+      // Filter out requests older than 12 hours
+      const now = new Date().getTime();
+      const twelveHoursInMs = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
+      const recentRequests = (data || []).filter((req: any) => {
+        const createdAt = new Date(req.createdAt).getTime();
+        const age = now - createdAt;
+        return age < twelveHoursInMs;
+      });
+
+      setRequests(recentRequests);
     } catch (error) {
-      console.error('Failed to load requests:', error);
+      console.error('Failed to load requests', error);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadArrangedRequirements = async () => {
-    try {
-      const data = await requirementsService.getAll();
-      const arranged = (data || []).filter((req: any) => req.status === 'Arranged');
-      setArrangedRequirements(arranged);
-    } catch (error) {
-      console.error('Failed to load arranged requirements:', error);
-    }
-  };
-
-  const loadDonors = async () => {
-    try {
-      const data = await userService.getDonors(filters);
-      setDonors(data || []);
-    } catch (error) {
-      console.error('Failed to load donors:', error);
+      setLoadingRequests(false);
     }
   };
 
   const handleCreateRequest = async () => {
     try {
-      await hospitalService.createRequest({
+      if (!newRequest.bloodGroup || !newRequest.patientName || !newRequest.phoneNumber) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      const requestData = {
         bloodGroup: newRequest.bloodGroup,
         quantity: newRequest.quantity,
-        hospitalName: 'Generic Request',
-        hospitalAddress: 'N/A',
+        patientName: newRequest.patientName,
+        phoneNumber: newRequest.phoneNumber,
+        hospitalName: user?.hospital_name || 'Generic Request',
+        hospitalAddress: user?.location || 'N/A',
         arrivalTime: new Date().toISOString()
-      });
-      setShowCreateModal(false);
-      setNewRequest({ bloodGroup: '', quantity: 1 });
-      await loadRequests();
-    } catch (error) {
+      };
+
+      await hospitalService.createRequest(requestData, user?.id);
+
+      setNewRequest({ bloodGroup: '', quantity: 1, patientName: '', phoneNumber: '' });
+      alert('Blood Request sent successfully!');
+      fetchRequests(); // Refresh the list after creating
+    } catch (error: any) {
       console.error('Failed to create request:', error);
+      alert('Failed to send request: ' + error.message);
     }
   };
-
-  const handleViewDonors = async (requestId: string) => {
-    try {
-      const data = await hospitalService.getEligibleDonors(requestId);
-      setDonors(data || []);
-      setSelectedRequest(requestId);
-      setShowDonorsModal(true);
-    } catch (error) {
-      console.error('Failed to load eligible donors:', error);
-    }
-  };
-
-  const handleAssignDonors = async (requestId: string, donorIds: string[]) => {
-    try {
-      await hospitalService.assignDonors(requestId, donorIds);
-      setShowDonorsModal(false);
-      await loadRequests();
-    } catch (error) {
-      console.error('Failed to assign donors:', error);
-    }
-  };
-
-  const handleUpdateStatus = async (requestId: string, status: string) => {
-    try {
-      await hospitalService.updateRequestStatus(requestId, status);
-      await loadRequests();
-    } catch (error) {
-      console.error('Failed to update request status:', error);
-    }
-  };
-
-  const getTimeSinceActive = (lastActive: string) => {
-    if (!lastActive) return 'Unknown';
-    const diff = Date.now() - new Date(lastActive).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
-
-  if (loading) {
-    return <div className="text-center py-12">Loading...</div>;
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Arranged Blood Requirements Section */}
-      {arrangedRequirements.length > 0 && (
-        <div className="bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 backdrop-blur-md rounded-3xl border border-emerald-700/50 overflow-hidden shadow-2xl">
-          <div className="p-6 border-b border-emerald-700/50 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-black text-emerald-300 uppercase tracking-widest">Arranged Blood Requirements</h2>
-            </div>
-            <span className="bg-emerald-700/30 text-emerald-300 px-4 py-1.5 rounded-full text-xs font-bold border border-emerald-600/30">
-              {arrangedRequirements.length} Fulfilled
-            </span>
+    <div className="min-h-screen space-y-6 md:space-y-8 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 bg-white/40 backdrop-blur-md p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-white/50 shadow-xl text-center md:text-left">
+        <div className="order-2 md:order-1">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 tracking-tight uppercase leading-tight">Blood Request</h1>
+          <p className="text-slate-500 font-bold text-xs md:text-sm tracking-[0.2em] mt-1 md:mt-2">SCT HOSPITAL PORTAL</p>
+        </div>
+        <div className="order-1 md:order-2 flex justify-center">
+          <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl overflow-hidden shadow-2xl border-4 border-white transform hover:rotate-3 transition-transform">
+            <img
+              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpklT3qZjcOxuDyBvvkN_BgA4xIw_tXZKdXlYmpSOfTlI8fAnHiZDGbKc"
+              alt="Hospital"
+              className="w-full h-full object-cover"
+            />
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {arrangedRequirements.map((req) => (
-                <div key={req.id} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-emerald-700/30 p-5 hover:border-emerald-600/50 transition-all">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-emerald-500/20 text-emerald-400 font-bold text-sm ring-2 ring-emerald-500/30">
-                        {req.bloodGroup}
-                      </span>
-                      <div>
-                        <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider">Arranged</p>
-                        <p className="text-xs text-slate-500">#{req.id.slice(0, 8)}</p>
+        </div>
+      </div>
+
+      {/* Centered Create Request Form */}
+      <div className="w-full max-w-xl mx-auto">
+        <div className="bg-white/95 backdrop-blur-sm rounded-[2rem] md:rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100">
+          <div className="bg-gradient-to-r from-red-600 to-rose-600 p-6 md:p-10 text-white text-center">
+            <h3 className="text-xl md:text-2xl font-black uppercase tracking-wider">New Request</h3>
+            <p className="text-red-100 text-xs md:text-sm font-medium mt-1">Fill details to notify available donors</p>
+          </div>
+
+          <form onSubmit={(e) => { e.preventDefault(); handleCreateRequest(); }} className="p-6 md:p-10 space-y-5 md:space-y-7">
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Blood Group Needed</label>
+              <select
+                value={newRequest.bloodGroup}
+                onChange={(e) => setNewRequest({ ...newRequest, bloodGroup: e.target.value })}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all font-bold text-base"
+                required
+              >
+                <option value="">Select Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Units (Quantity)</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="Number of units"
+                value={newRequest.quantity}
+                onChange={(e) => setNewRequest({ ...newRequest, quantity: parseInt(e.target.value) })}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all font-bold text-base"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Patient Name</label>
+              <input
+                type="text"
+                placeholder="Full name of patient"
+                value={newRequest.patientName}
+                onChange={(e) => setNewRequest({ ...newRequest, patientName: e.target.value })}
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all font-bold text-base"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] md:text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Phone Number</label>
+              <input
+                type="tel"
+                placeholder="Emergency contact"
+                value={newRequest.phoneNumber}
+                onChange={(e) => setNewRequest({ ...newRequest, phoneNumber: e.target.value })}
+                className="w-full px-5 md:px-6 py-3.5 md:py-4 bg-slate-50 border border-slate-100 rounded-xl md:rounded-2xl focus:ring-4 focus:ring-red-50 focus:border-red-500 transition-all font-bold text-sm md:text-base outline-none"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-4 md:py-5 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl md:rounded-2xl shadow-xl shadow-red-200 transition-all transform hover:-translate-y-1 active:scale-95 uppercase tracking-widest text-xs md:text-sm mt-2 md:mt-4"
+            >
+              Send Request
+            </button>
+          </form>
+        </div>
+
+
+        {/* My Requests List */}
+        <div className="max-w-4xl mx-auto mt-12 mb-12">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight pl-4 border-l-4 border-red-500">My Requests Status</h2>
+            <button
+              onClick={fetchRequests}
+              disabled={loadingRequests}
+              className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+            >
+              <svg className={`w-4 h-4 ${loadingRequests ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          {loadingRequests ? (
+            <div className="flex justify-center p-12"><div className="animate-spin h-8 w-8 border-2 border-red-500 rounded-full border-t-transparent"></div></div>
+          ) : requests.length === 0 ? (
+            <div className="bg-white/50 rounded-2xl p-8 text-center border border-slate-200">
+              <p className="text-slate-400 font-bold">No requests history found.</p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {requests.map((req: any) => (
+                <div key={req.id} className="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="flex items-center space-x-6 w-full md:w-auto">
+                    <div className="h-16 w-16 bg-red-50 rounded-2xl flex flex-col items-center justify-center border border-red-100">
+                      <span className="text-xl font-black text-red-500">{req.bloodGroup}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Group</span>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-black text-slate-800 uppercase">{req.patientName || 'Unknown Patient'}</h4>
+                      <div className="flex items-center space-x-4 mt-1">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{req.quantity} Units</span>
+                        <span className="text-xs font-bold text-slate-300">•</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{new Date(req.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <span className="text-lg font-black text-emerald-400">{req.quantity} Units</span>
                   </div>
 
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Patient Details</p>
-                      <p className="text-sm font-bold text-white">{req.patientName || 'Unknown'}</p>
-                      <p className="text-xs text-slate-400">{req.treatmentType || 'Emergency'}</p>
-                    </div>
-
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Contact</p>
-                      <p className="text-xs font-mono text-slate-300">{req.contactNumber || 'No Contact'}</p>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-700/50">
-                      <p className="text-[10px] text-slate-500">Arranged {getTimeSinceActive(req.createdAt)}</p>
+                  <div className="w-full md:w-auto flex justify-end">
+                    <div className={`px-6 py-2 rounded-xl border-2 font-black uppercase tracking-widest text-[10px] ${(req.status === 'Completed' || req.status === 'COMPLETED' || req.status === 'Arranged')
+                      ? 'bg-emerald-50 border-emerald-500 text-emerald-600'
+                      : (req.status === 'Approved' || req.status === 'ASSIGNED')
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-600'
+                        : (req.status === 'Rejected' || req.status === 'REJECTED')
+                          ? 'bg-red-50 border-red-500 text-red-600'
+                          : 'bg-amber-50 border-amber-500 text-amber-600'
+                      }`}>
+                      {req.status === 'COMPLETED' || req.status === 'Arranged' ? 'Arranged' : req.status === 'ASSIGNED' || req.status === 'Approved' ? 'Approved' : req.status === 'REJECTED' || req.status === 'Rejected' ? 'Rejected' : req.status}
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 bg-white/50 backdrop-blur-sm px-4 py-2 rounded-lg inline-block">Hospital Requests</h1>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 shadow-lg"
-        >
-          Create Request
-        </button>
-      </div>
-
-      <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Filter Available Donors</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Blood Group</label>
-            <select
-              value={filters.bloodGroup}
-              onChange={(e) => setFilters({ ...filters, bloodGroup: e.target.value })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-            >
-              <option value="">Select Blood Group</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Min Trust Score</label>
-            <input
-              type="number"
-              value={filters.minTrustScore}
-              onChange={(e) => setFilters({ ...filters, minTrustScore: e.target.value })}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={loadDonors}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-            >
-              Search Donors
-            </button>
-          </div>
-        </div>
-        {filters.bloodGroup && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-600">Found {donors.length} eligible donors</p>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white/95 backdrop-blur-sm shadow-xl rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">My Requests ({requests.length})</h2>
-        <div className="space-y-4">
-          {requests.map((request) => (
-            <div key={request.id} className="border rounded-lg p-4 bg-white/50">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold text-lg text-indigo-800">
-                    {request.hospitalName || 'Generic Request'}
-                  </p>
-                  <p className="text-sm text-gray-500 mb-2">{request.hospitalAddress}</p>
-                  <p className="font-semibold text-gray-800">
-                    Blood Group: <span className="text-red-600">{request.bloodGroup}</span> | Units: <span className="text-red-600">{request.quantity}</span>
-                  </p>
-                  <p className="text-sm text-gray-600">Created: {formatDate(request.createdAt)}</p>
-                  <p className="text-sm font-medium text-amber-600">
-                    Arrival: {request.arrivalTime ? formatDate(request.arrivalTime) : 'Not specified'}
-                  </p>
-                  <p className="text-sm mt-1">
-                    Status:{' '}
-                    <span
-                      className={`px-2 py-1 rounded ${request.status === 'COMPLETED'
-                        ? 'bg-green-100 text-green-800'
-                        : request.status === 'ASSIGNED'
-                          ? 'bg-blue-100 text-blue-800'
-                          : request.status === 'CANCELLED'
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                    >
-                      {request.status}
-                    </span>
-                  </p>
-                </div>
-                <div className="flex space-x-2">
-                  {request.status === 'PENDING' && (
-                    <button
-                      onClick={() => handleViewDonors(request.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      View Donors
-                    </button>
-                  )}
-                  {request.status === 'ASSIGNED' && (
-                    <button
-                      onClick={() => handleUpdateStatus(request.id, 'COMPLETED')}
-                      className="text-green-600 hover:text-green-800 text-sm"
-                    >
-                      Mark Completed
-                    </button>
-                  )}
-                  {request.status !== 'COMPLETED' && request.status !== 'CANCELLED' && (
-                    <button
-                      onClick={() => handleUpdateStatus(request.id, 'CANCELLED')}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-              {request.donationAttempts && request.donationAttempts.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-2">Assigned Donors:</p>
-                  <div className="space-y-2">
-                    {request.donationAttempts.map((attempt: any) => (
-                      <div key={attempt.id} className="bg-gray-50 p-2 rounded">
-                        <p className="text-sm">
-                          {attempt.user?.studentDetails?.name || attempt.user?.username} -{' '}
-                          <span
-                            className={`${attempt.status === 'SUCCESS'
-                              ? 'text-green-600'
-                              : attempt.status === 'FAILURE'
-                                ? 'text-red-600'
-                                : 'text-yellow-600'
-                              }`}
-                          >
-                            {attempt.status}
-                          </span>
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          {requests.length === 0 && (
-            <p className="text-center py-4 text-gray-500">No requests yet</p>
           )}
         </div>
       </div>
-
-      {/* Modals are kept inside the relative z-stack to appear above background */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-bold mb-4">Create Blood Request</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Blood Group</label>
-                <select
-                  value={newRequest.bloodGroup}
-                  onChange={(e) => setNewRequest({ ...newRequest, bloodGroup: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                >
-                  <option value="">Select Blood Group</option>
-                  <option value="A+">A+</option>
-                  <option value="A-">A-</option>
-                  <option value="B+">B+</option>
-                  <option value="B-">B-</option>
-                  <option value="AB+">AB+</option>
-                  <option value="AB-">AB-</option>
-                  <option value="O+">O+</option>
-                  <option value="O-">O-</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Quantity</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newRequest.quantity}
-                  onChange={(e) => setNewRequest({ ...newRequest, quantity: parseInt(e.target.value) })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewRequest({ bloodGroup: '', quantity: 1 });
-                  }}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateRequest}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                >
-                  Create
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDonorsModal && selectedRequest && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-bold mb-4">Eligible Donors</h3>
-            <div className="overflow-x-auto max-h-96">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Select
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Trust Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Phone
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Department
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {donors.map((donor) => (
-                    <tr key={donor.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <input
-                          type="checkbox"
-                          className="rounded"
-                          id={`donor-${donor.id}`}
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {donor.studentDetails?.name || donor.username}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {donor.trustScore}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {donor.studentDetails?.phoneNumber || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {donor.studentDetails?.department || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex justify-end space-x-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowDonorsModal(false);
-                  setSelectedRequest(null);
-                }}
-                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  const selectedIds = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
-                    .map((cb) => (cb as HTMLInputElement).id.replace('donor-', ''));
-                  handleAssignDonors(selectedRequest, selectedIds);
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                Assign Selected
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -44,8 +44,8 @@ const Register = () => {
     // Check for duplicate admission number (registration_number in student_details)
     const { data: admissionData } = await supabase
       .from('student_details')
-      .select('registration_number')
-      .eq('registration_number', formData.admissionNumber)
+      .select('admission_number')
+      .eq('admission_number', formData.admissionNumber)
       .maybeSingle();
 
     if (admissionData) {
@@ -89,6 +89,11 @@ const Register = () => {
           data: {
             name: formData.name,
             role: 'STUDENT',
+            admission_number: formData.admissionNumber,
+            phone_number: formData.phoneNumber,
+            blood_group: formData.bloodGroup,
+            department: formData.department,
+            college_name: formData.collegeName,
           }
         }
       });
@@ -120,7 +125,7 @@ const Register = () => {
         .upsert({
           user_id: userId,
           name: formData.name,
-          registration_number: formData.admissionNumber,
+          admission_number: formData.admissionNumber,
           phone_number: formData.phoneNumber,
           department: formData.department,
           blood_group: formData.bloodGroup,
@@ -142,6 +147,7 @@ const Register = () => {
         email: formData.email,
       });
       setIsSuccess(true);
+      alert("verification mail is sent to your respective email,verify it !!");
 
     } catch (err: any) {
       console.error('Final Registration Error:', err);
@@ -167,6 +173,7 @@ const Register = () => {
               </svg>
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900">Registration Successful!</h2>
+            <p className="mt-2 text-green-600 font-bold">verification mail is sent to your respective email, verify it !!</p>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -215,6 +222,17 @@ const Register = () => {
         <div className="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-red-100 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-rose-100 rounded-full blur-[100px]"></div>
       </div>
+
+      <Link
+        to="/"
+        className="fixed top-6 right-6 flex items-center space-x-2 text-slate-500 hover:text-red-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md z-50"
+        title="Back to Selection"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="text-sm font-semibold">Back</span>
+      </Link>
 
       <div className="relative z-10 max-w-xl w-full space-y-8">
         <div className="text-center">

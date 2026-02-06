@@ -105,7 +105,7 @@ const HospitalRegisterRequest = () => {
             <div className="relative z-10">
                 <button
                     onClick={() => navigate('/hospital-login')}
-                    className="fixed top-6 left-6 z-30 flex items-center space-x-2 text-slate-500 hover:text-indigo-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md"
+                    className="fixed top-6 right-6 z-30 flex items-center space-x-2 text-slate-500 hover:text-indigo-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md"
                     title="Back to Login"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -134,7 +134,21 @@ const HospitalRegisterRequest = () => {
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                                        Patient Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Patient Name"
+                                        value={formData.patientName}
+                                        onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium text-sm"
+                                    />
+                                </div>
+
                                 <div>
                                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                                         Contact Number
@@ -142,43 +156,28 @@ const HospitalRegisterRequest = () => {
                                     <input
                                         type="tel"
                                         required
-                                        placeholder="Emergency Contact Number"
+                                        placeholder="Emergency Contact"
                                         value={formData.contactNumber}
                                         onChange={(e) => setFormData({ ...formData, contactNumber: e.target.value })}
-                                        className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium text-sm"
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                                            Patient Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Patient Name"
-                                            value={formData.patientName}
-                                            onChange={(e) => setFormData({ ...formData, patientName: e.target.value })}
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
-                                            Treatment Type
-                                        </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Ex: Surgery"
-                                            value={formData.treatmentType}
-                                            onChange={(e) => setFormData({ ...formData, treatmentType: e.target.value })}
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
+                                        Treatment Type
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Ex: Surgery"
+                                        value={formData.treatmentType}
+                                        onChange={(e) => setFormData({ ...formData, treatmentType: e.target.value })}
+                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium text-sm"
+                                    />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">
                                             Blood Group
@@ -187,7 +186,7 @@ const HospitalRegisterRequest = () => {
                                             required
                                             value={formData.bloodGroup}
                                             onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium text-sm"
                                         >
                                             <option value="">Select</option>
                                             {bloodGroups.map(bg => <option key={bg} value={bg}>{bg}</option>)}
@@ -203,7 +202,7 @@ const HospitalRegisterRequest = () => {
                                             min="1"
                                             value={formData.quantity}
                                             onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium"
+                                            className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 transition-all font-medium text-sm"
                                         />
                                     </div>
                                 </div>
@@ -242,9 +241,6 @@ const HospitalRegisterRequest = () => {
                                 </div>
                                 <h2 className="text-xl font-black text-white uppercase tracking-widest">Registered Requirements</h2>
                             </div>
-                            <span className="bg-white/20 text-white px-4 py-1.5 rounded-full text-xs font-black backdrop-blur-sm border border-white/30">
-                                {allRequirements.length} TOTAL REQUESTS
-                            </span>
                         </div>
 
                         <div className="overflow-x-auto">

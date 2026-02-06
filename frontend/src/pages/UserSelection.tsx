@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
 const UserSelection = () => {
     const navigate = useNavigate();
@@ -47,39 +48,26 @@ const UserSelection = () => {
     ];
 
     return (
-        <div className="min-h-screen relative overflow-hidden">
-            {/* Fixed Background Image */}
-            <div className="fixed inset-0 z-0">
-                <div
-                    className="absolute inset-0 bg-bottom bg-no-repeat bg-cover"
-                    style={{
-                        backgroundImage: 'url(https://www.sonatech.ac.in/photo-gallery/campus/images/college-entrance.jpg)',
-                    }}
-                ></div>
-                {/* Minimal overlay to ensure text is just readable enough, prioritizing background visibility */}
-                <div className="absolute inset-0 bg-white/25"></div>
-            </div>
+        <div className="min-h-screen relative overflow-hidden bg-slate-100">
+            <GlobalBackgroundSlideshow />
 
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
                 <div className="w-full max-w-6xl text-center space-y-12">
                     <div className="space-y-4">
-                        <h1 className="text-5xl font-black text-gray-900 tracking-tight bg-white/80 backdrop-blur-md px-8 py-4 rounded-2xl inline-block shadow-lg">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight bg-white/80 backdrop-blur-md px-4 sm:px-8 py-3 sm:py-4 rounded-2xl inline-block shadow-lg">
                             Welcome to <span className="text-red-600">BloodLine</span>
                         </h1>
-                        <p className="text-xl text-gray-900 max-w-2xl mx-auto bg-white/70 backdrop-blur-md px-6 py-3 rounded-xl font-bold shadow-md">
-                            A centralized platform connecting donors, hospitals, and lives.
-                            Please select your portal to continue.
-                        </p>
+
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-8 sm:mt-12">
                         {roles.map((role) => (
                             <button
                                 key={role.id}
                                 onClick={() => navigate(role.path)}
-                                className="group relative flex flex-col items-center p-8 bg-white/95 backdrop-blur-md border border-gray-100 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left"
+                                className="group relative flex flex-col items-center p-6 sm:p-8 bg-white/95 backdrop-blur-md border border-gray-100 rounded-2xl sm:rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 text-left"
                             >
-                                <div className={`p-4 rounded-2xl bg-gradient-to-br ${role.color} text-white mb-6 transform group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
+                                <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-br ${role.color} text-white mb-4 sm:mb-6 transform group-hover:scale-110 transition-transform duration-500 shadow-lg`}>
                                     {role.icon}
                                 </div>
                                 <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
@@ -105,8 +93,22 @@ const UserSelection = () => {
                     </div>
 
                     <div className="pt-1 text-gray-900 text-sm font-bold bg-white/60 backdrop-blur-md px-3 py-3 rounded-xl inline-block shadow-sm">
-                        &copy;SONA INSTITUITIONS.All rights reserved.
+                        &copy;SONA INSTITUITIONS. All rights reserved.
                     </div>
+                </div>
+            </div>
+
+            {/* Marquee Credits */}
+            <div className="fixed bottom-0 left-0 right-0 bg-red-600/90 backdrop-blur-md py-3 overflow-hidden z-20 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] border-t border-red-400/30">
+                <div className="whitespace-nowrap animate-marquee">
+                    <span className="text-white font-black uppercase tracking-[0.2em] text-sm px-4">
+                        Presented by: MATHI - II Year • PRASANA - III Year • SANJAY - II Year • VARSHINI - II Year • PRIYA - II Year • PAVITHRA - II Year
+                    </span>
+                    {/* Repeated for seamless flow if needed, but 25s for one pass is fine. 
+                        Let's duplicate it once to ensure there's no gap when the first one finishes. */}
+                    <span className="text-white font-black uppercase tracking-[0.2em] text-sm px-4" aria-hidden="true">
+                        Presented by: MATHI - II Year • PRASANA - III Year • SANJAY - II Year • VARSHINI - II Year • PRIYA - II Year • PAVITHRA - II Year
+                    </span>
                 </div>
             </div>
         </div>

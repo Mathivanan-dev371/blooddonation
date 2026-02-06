@@ -4,6 +4,8 @@ import { supabase } from '../services/supabase';
 
 const HospitalRegister = () => {
     const [formData, setFormData] = useState({
+        hospitalName: '',
+        location: '',
         username: '',
         email: '',
         password: '',
@@ -25,20 +27,23 @@ const HospitalRegister = () => {
         setLoading(true);
 
         try {
-            // Register with HOSPITAL role in metadata
+            // Register with HOSPITAL role and additional details in metadata
             const { error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
                     data: {
                         username: formData.username,
-                        role: 'HOSPITAL'
+                        role: 'HOSPITAL',
+                        hospital_name: formData.hospitalName,
+                        location: formData.location
                     }
                 }
             });
 
             if (authError) throw authError;
 
+            alert("verification mail is sent to your respective email,verify it !!");
             navigate('/hospital-login');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
@@ -75,6 +80,35 @@ const HospitalRegister = () => {
                             </div>
                         )}
                         <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                        Hospital Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
+                                        placeholder="City General"
+                                        value={formData.hospitalName}
+                                        onChange={(e) => setFormData({ ...formData, hospitalName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                        Location
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="appearance-none relative block w-full px-5 py-3.5 bg-slate-50 border border-slate-100 placeholder-slate-400 text-slate-900 rounded-2xl focus:outline-none focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all sm:text-sm font-medium"
+                                        placeholder="Downtown"
+                                        value={formData.location}
+                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
                                     Username

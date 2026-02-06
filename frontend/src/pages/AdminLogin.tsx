@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
 const AdminLogin = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -16,7 +17,12 @@ const AdminLogin = () => {
         setLoading(true);
 
         try {
-            await login(username, password);
+            const user = await login(username, password);
+            if (user.role !== 'ADMIN') {
+                const roleName = user.role.toLowerCase();
+                logout();
+                throw new Error(`This account is for ${roleName}s. Please use the ${roleName} portal.`);
+            }
             navigate('/admin');
         } catch (err: any) {
             setError(err.message || 'Login failed');
@@ -26,16 +32,16 @@ const AdminLogin = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-            {/* Decorative background elements */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20">
+        <div className="min-h-screen flex items-center justify-center bg-slate-900 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+            <GlobalBackgroundSlideshow />
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 pointer-events-none">
                 <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-red-600 rounded-full blur-[120px]"></div>
                 <div className="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]"></div>
             </div>
 
             <Link
                 to="/"
-                className="absolute top-6 left-6 z-10 flex items-center space-x-2 text-slate-300 hover:text-white transition-all duration-300 bg-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-lg"
+                className="absolute top-6 right-6 z-10 flex items-center space-x-2 text-slate-300 hover:text-white transition-all duration-300 bg-white/5 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-lg"
                 title="Back to Selection"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,25 +50,25 @@ const AdminLogin = () => {
                 <span className="text-sm font-semibold">Back</span>
             </Link>
 
-            <div className="max-w-md w-full space-y-8 relative z-10 bg-white/10 backdrop-blur-xl p-10 rounded-3xl border border-white/20 shadow-2xl">
+            <div className="max-w-md w-full space-y-8 relative z-10 bg-[#F0F8FF] p-10 rounded-3xl shadow-2xl">
                 <div>
                     <div className="flex justify-center">
-                        <div className="bg-red-500/20 p-4 rounded-2xl backdrop-blur-md border border-red-500/30">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                         </div>
                     </div>
-                    <h2 className="mt-6 text-center text-4xl font-black text-white tracking-tight">
+                    <h2 className="mt-6 text-center text-4xl font-black text-slate-900 tracking-tight">
                         Admin Portal
                     </h2>
-                    <p className="mt-2 text-center text-sm text-slate-400">
+                    <p className="mt-2 text-center text-sm text-slate-500 font-bold">
                         Secure access for system administrators
                     </p>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/50 text-red-200 px-4 py-3 rounded-xl backdrop-blur-md text-sm text-center">
+                        <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm text-center font-bold">
                             {error}
                         </div>
                     )}
@@ -77,7 +83,7 @@ const AdminLogin = () => {
                                 type="text"
                                 autoComplete="username"
                                 required
-                                className="appearance-none relative block w-full px-4 py-3 bg-white/5 border border-white/10 placeholder-slate-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all sm:text-sm"
+                                className="appearance-none relative block w-full px-4 py-3 bg-white border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all sm:text-sm"
                                 placeholder="Username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
@@ -92,7 +98,7 @@ const AdminLogin = () => {
                                 name="password"
                                 type="password"
                                 required
-                                className="appearance-none relative block w-full px-4 py-3 bg-white/5 border border-white/10 placeholder-slate-500 text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all sm:text-sm"
+                                className="appearance-none relative block w-full px-4 py-3 bg-white border border-slate-200 placeholder-slate-400 text-slate-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all sm:text-sm"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -104,7 +110,7 @@ const AdminLogin = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 transition-all duration-300 shadow-lg shadow-red-600/20"
+                            className="group relative w-full flex justify-center py-4 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 transition-all duration-300 shadow-xl"
                         >
                             {loading ? (
                                 <span className="flex items-center space-x-2">

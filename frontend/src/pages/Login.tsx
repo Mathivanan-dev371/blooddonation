@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,7 +17,12 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(username, password);
+      const user = await login(username, password);
+      if (user.role !== 'STUDENT') {
+        const roleName = user.role.toLowerCase();
+        logout();
+        throw new Error(`This account is for ${roleName}s. Please use the ${roleName} portal.`);
+      }
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -27,10 +33,11 @@ const Login = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-slate-50">
+      <GlobalBackgroundSlideshow />
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4 sm:px-6 lg:px-8">
         <Link
           to="/"
-          className="fixed top-6 left-6 flex items-center space-x-2 text-slate-500 hover:text-red-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md z-50"
+          className="fixed top-6 right-6 flex items-center space-x-2 text-slate-500 hover:text-red-600 transition-all duration-300 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 shadow-md z-50"
           title="Back to Selection"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -39,7 +46,7 @@ const Login = () => {
           <span className="text-sm font-semibold">Back</span>
         </Link>
 
-        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100">
+        <div className="max-w-md w-full space-y-8 bg-[#F0F8FF] p-8 rounded-[2rem] shadow-xl border-none">
           <div>
             <div className="flex justify-center mb-2">
               <div className="h-12 w-12 bg-red-100 rounded-xl flex items-center justify-center text-red-600">
@@ -100,7 +107,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-2xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 shadow-lg shadow-red-200 transition-all transform hover:-translate-y-0.5 active:scale-95 tracking-wide uppercase"
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-2xl text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:opacity-50 shadow-lg shadow-gray-200 transition-all transform hover:-translate-y-0.5 active:scale-95 tracking-wide uppercase"
               >
                 {loading ? (
                   <span className="flex items-center">
@@ -117,7 +124,7 @@ const Login = () => {
             <div className="text-center pt-2">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link to="/register" className="font-bold text-red-600 hover:text-red-500 transition-colors">
+                <Link to="/register" className="font-bold text-black hover:text-gray-700 transition-colors">
                   Register here
                 </Link>
               </p>

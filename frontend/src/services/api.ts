@@ -21,10 +21,10 @@ const mapStudentDetails = (details: any) => {
 
   return {
     ...d,
-    registrationNumber: d.registration_number,
-    dateOfBirth: d.date_of_birth,
+    admissionNumber: d.admission_number,
     phoneNumber: d.phone_number,
     bloodGroup: d.blood_group,
+    collegeName: d.college_name,
     //year_semester is already used as year_semester in dashboard
   };
 };
@@ -46,19 +46,11 @@ export const authService = {
     // or just ignore if we trust the persistent session.
   },
   login: async (usernameOrEmail: string, password: string) => {
-    // Master Admin Login Override
-    if (usernameOrEmail === 'sonablood' && password === 'sonab') {
-      return {
-        user: {
-          id: 'admin-master-id',
-          username: 'sonablood',
-          role: 'ADMIN',
-          trustScore: 100,
-          isActive: true
-        },
-        token: 'demo-admin-token'
-      };
-    }
+    // Admin and Hospital Logins now use REAL Supabase auth
+    // Create users via: Supabase Dashboard → Authentication → Add User
+
+    // Hospital Login - removed mock, now uses REAL Supabase auth
+    // Create hospital user via: Supabase Dashboard → Authentication → Add User
 
     const identifier = usernameOrEmail.trim();
     let email = identifier;
@@ -66,11 +58,11 @@ export const authService = {
     // Advanced Identifier Lookup (Check if input is Admission Number, Email, or Username)
     if (!identifier.includes('@')) {
       try {
-        // 1. Check if it's an Admission Number (registration_number)
+        // 1. Check if it's an Admission Number (admission_number)
         const { data: studentMatch, error: studentError } = await supabase
           .from('student_details')
           .select('user_id')
-          .eq('registration_number', identifier)
+          .eq('admission_number', identifier)
           .maybeSingle();
 
         if (studentMatch && !studentError) {
@@ -107,11 +99,38 @@ export const authService = {
       throw new Error('No account found with this Admission Number or Username.');
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    let { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) handleError(error);
+
+    if (error) {
+      // Fallback: Check manual hospital_accounts registry
+      const { data: manualAcc, error: manualError } = await supabase
+        .from('hospital_accounts')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password) // In a real app, this should be hashed
+        .maybeSingle();
+
+      if (manualAcc && !manualError) {
+        return {
+          user: {
+            id: manualAcc.id,
+            email: manualAcc.email,
+            username: manualAcc.hospital_name,
+            role: 'HOSPITAL',
+            hospital_name: manualAcc.hospital_name,
+            location: manualAcc.location,
+            trustScore: 100,
+            isActive: true
+          },
+          token: 'manual-hospital-token-' + manualAcc.id
+        };
+      }
+      handleError(error);
+    }
+
     if (!data.user) throw new Error('Login failed: No user data returned');
 
     // Fetch profile and details to match previous API response structure
@@ -126,12 +145,8 @@ export const authService = {
     }
 
     if (!profile) {
-      console.warn('Profile not found for user during login');
-      // We still return the user so they are "logged in" but might have limited access
-      return {
-        user: { ...data.user, role: 'STUDENT' }, // Default role if profile missing
-        token: data.session?.access_token,
-      };
+      // If profile is missing, it means the user has been "deleted" or deactivated by admin
+      throw new Error('Your account is no longer active. Please contact administration for support.');
     }
 
     const mappedProfile = mapProfile(profile);
@@ -153,13 +168,11 @@ export const authService = {
           username,
           role: 'STUDENT',
           name: details.name || username,
-          registration_number: details.registrationNumber,
-          date_of_birth: details.dateOfBirth,
-          age: parseInt(details.age) || 0,
+          admission_number: details.admissionNumber,
           phone_number: details.phoneNumber,
           blood_group: details.bloodGroup,
           department: details.department,
-          year_semester: details.year_semester,
+          college_name: details.collegeName,
         },
       },
     });
@@ -310,6 +323,14 @@ export const userService = {
     if (error) handleError(error);
     return mapProfile(data);
   },
+  adjustTrustScore: async (userId: string, delta: number) => {
+    const { error } = await supabase.rpc('adjust_trust_score', {
+      p_user_id: userId,
+      p_delta: delta
+    });
+    if (error) handleError(error);
+    return true;
+  },
   updateUserStatus: async (id: string, isActive: boolean) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -321,15 +342,19 @@ export const userService = {
     return mapProfile(data);
   },
   deleteUser: async (id: string) => {
-    // NOTE: Deleting from auth.users via client is usually not allowed directly 
-    // without service key or admin function. 
-    // But we can delete from profiles if cascading is set up, 
-    // however auth user remains.
-    // Ideally we call an Edge Function or RPC.
-    // For now, we will just delete from profiles and assume auth user clean up is manual or handled elsewhere
-    // Or we just deactivate.
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    if (error) handleError(error);
+    // We use a custom RPC because standard users cannot delete from auth.users via client
+    // The delete_user_entirely function is defined to handle cascading deletes.
+    const { error } = await supabase.rpc('delete_user_entirely', { p_user_id: id });
+
+    // Fallback: if RPC isn't set up yet, at least delete the profile to revoke access
+    if (error && error.message?.includes('function public.delete_user_entirely')) {
+      console.warn('RPC delete_user_entirely not found, falling back to profile deletion');
+      const { error: profileError } = await supabase.from('profiles').delete().eq('id', id);
+      if (profileError) handleError(profileError);
+    } else if (error) {
+      handleError(error);
+    }
+
     return { success: true };
   },
 };
@@ -375,17 +400,30 @@ export const donationService = {
 };
 
 export const hospitalService = {
-  createRequest: async (data: { bloodGroup: string, quantity: number, hospitalName: string, hospitalAddress: string, arrivalTime: string }) => {
-    const { data: { user } } = await supabase.auth.getUser();
+  createRequest: async (data: { bloodGroup: string, quantity: number, hospitalName: string, hospitalAddress: string, arrivalTime: string, patientName?: string, phoneNumber?: string }, hospitalId?: string) => {
+    let userId = hospitalId;
+
+    // If no hospitalId provided, try to get from Supabase auth (for real logged-in users)
+    if (!userId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      userId = user?.id;
+    }
+
+    if (!userId) {
+      throw new Error('Hospital ID not available. Please log in again.');
+    }
+
     const { data: result, error } = await supabase
       .from('hospital_requests')
       .insert({
-        hospital_id: user?.id,
+        hospital_id: userId,
         blood_group: data.bloodGroup,
         quantity: data.quantity,
         hospital_name: data.hospitalName,
         hospital_address: data.hospitalAddress,
-        arrival_time: data.arrivalTime
+        arrival_time: data.arrivalTime,
+        patient_name: data.patientName,
+        phone_number: data.phoneNumber
       })
       .select()
       .single();
@@ -396,23 +434,72 @@ export const hospitalService = {
     if (!req) return null;
     return {
       ...req,
+      _source: 'hospital_requests',
       bloodGroup: req.blood_group,
       hospitalName: req.hospital_name,
       hospitalAddress: req.hospital_address,
       arrivalTime: req.arrival_time,
+      patientName: req.patient_name,
+      contactNumber: req.phone_number,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
     };
   },
-  getMyRequests: async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+  updateStatus: async (id: string, status: string) => {
+    let dbStatus = status;
+    if (status === 'Approved') dbStatus = 'ASSIGNED';
+    if (status === 'Arranged') dbStatus = 'COMPLETED';
+    if (status === 'Rejected') dbStatus = 'REJECTED';
+
+    const { data, error } = await supabase
+      .from('hospital_requests')
+      .update({ status: dbStatus })
+      .eq('id', id);
+    if (error) handleError(error);
+    return data;
+  },
+  getMyRequests: async (userId?: string) => {
+    let hospitalId = userId;
+
+    // If no userId provided, try to get from Supabase auth (for real logged-in users)
+    if (!hospitalId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      hospitalId = user?.id;
+    }
+
+    // If still no ID, return empty array
+    if (!hospitalId) {
+      console.warn('[getMyRequests] No hospital ID available');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('hospital_requests')
       .select('*')
-      .eq('hospital_id', user?.id || '')
+      .eq('hospital_id', hospitalId)
       .order('created_at', { ascending: false });
     if (error) handleError(error);
     return (data || []).map((req: any) => hospitalService.mapHospitalRequest(req));
+  },
+  respondToRequest: async (requestId: string, studentId: string) => {
+    const { data: request, error: getError } = await supabase
+      .from('hospital_requests')
+      .select('assigned_donors')
+      .eq('id', requestId)
+      .single();
+
+    if (getError || !request) {
+      handleError(getError || new Error('Request not found'));
+      return;
+    }
+
+    const { error } = await supabase.rpc('join_hospital_request', {
+      p_request_id: requestId,
+      p_student_id: studentId
+    });
+
+    if (error) handleError(error);
+    return { success: true };
   },
   getEligibleDonors: async (requestId: string) => {
     // Fetch request to get blood group
@@ -422,29 +509,20 @@ export const hospitalService = {
     // Fetch donors with that blood group
     const { data, error } = await supabase
       .from('student_details')
-      .select('*, user:profiles(*)')
+      .select('*, user:profiles!inner(*)')
       .eq('blood_group', req.blood_group)
-      // Check availability via user profile
-      // This requires complex filtering on joined table which Supabase supports
       .eq('user.is_available', true);
-
-    // Note: checking nested filter 'user.is_available' might need !inner join syntax
 
     if (error) handleError(error);
     return data;
   },
   assignDonors: async (requestId: string, donorIds: string[]) => {
-    // Update hospital request assigned_donors array
     const { data, error } = await supabase
       .from('hospital_requests')
       .update({ assigned_donors: donorIds, status: 'ASSIGNED' })
       .eq('id', requestId)
       .select()
       .single();
-
-    // Also potentially create donation attempts for them?
-    // Logic from original backend might imply this.
-    // For now just update the request.
 
     if (error) handleError(error);
     return data;
@@ -464,6 +542,94 @@ export const hospitalService = {
     if (error) handleError(error);
     return (data || []).map((req: any) => hospitalService.mapHospitalRequest(req));
   },
+  getRequestResponders: async (requestId: string) => {
+    // 1. First try to get from the new tracking table
+    const { data: tracking, error: trackError } = await supabase
+      .from('hospital_response_tracking')
+      .select('*, student:profiles(*, student_details(*))')
+      .eq('request_id', requestId);
+
+    if (!trackError && tracking && tracking.length > 0) {
+      return tracking.map(item => ({
+        ...item,
+        student: mapProfile(item.student),
+        status: 'Accepted'
+      }));
+    }
+
+    // 2. Fallback to assigned_donors array for backward compatibility
+    const { data: request, error: reqError } = await supabase
+      .from('hospital_requests')
+      .select('assigned_donors')
+      .eq('id', requestId)
+      .single();
+
+    if (reqError) handleError(reqError);
+
+    const donorIds = request?.assigned_donors || [];
+    if (donorIds.length === 0) return [];
+
+    const { data: profiles, error: profError } = await supabase
+      .from('profiles')
+      .select('*, student_details(*)')
+      .in('id', donorIds);
+
+    if (profError) handleError(profError);
+
+    return (profiles || []).map(mapProfile).map(student => ({
+      id: `resp-${student.id}`,
+      student: student,
+      status: 'Accepted',
+      arrival_status: 'Pending'
+    }));
+  },
+  updateArrivalStatus: async (requestId: string, studentId: string, status: string) => {
+    // Try update first
+    const { data, error } = await supabase
+      .from('hospital_response_tracking')
+      .update({ arrival_status: status })
+      .eq('request_id', requestId)
+      .eq('student_id', studentId)
+      .select();
+
+    if (!error && data && data.length > 0) return data[0];
+
+    // Upsert if not exists
+    const { data: upsertData, error: upsertError } = await supabase
+      .from('hospital_response_tracking')
+      .upsert({
+        request_id: requestId,
+        student_id: studentId,
+        arrival_status: status
+      }, { onConflict: 'request_id,student_id' })
+      .select()
+      .single();
+
+    if (upsertError) handleError(upsertError);
+    return upsertData;
+  },
+  registerByAdmin: async (data: { hospitalName: string, email: string, password: string, location: string }) => {
+    const { data: result, error } = await supabase
+      .from('hospital_accounts')
+      .insert({
+        hospital_name: data.hospitalName,
+        email: data.email,
+        password: data.password,
+        location: data.location
+      })
+      .select()
+      .single();
+    if (error) handleError(error);
+    return result;
+  },
+  getAllRegisteredByAdmin: async () => {
+    const { data, error } = await supabase
+      .from('hospital_accounts')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) handleError(error);
+    return data || [];
+  }
 };
 
 export const requirementsService = {
@@ -485,13 +651,17 @@ export const requirementsService = {
     return result;
   },
   getAll: async () => {
-    const { data, error } = await supabase
-      .from('blood_requirements')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) handleError(error);
-    return (data || []).map((item: any) => ({
+    const [reqs, hosps] = await Promise.all([
+      supabase.from('blood_requirements').select('*').order('created_at', { ascending: false }),
+      supabase.from('hospital_requests').select('*').order('created_at', { ascending: false })
+    ]);
+
+    if (reqs.error) handleError(reqs.error);
+    if (hosps.error) handleError(hosps.error);
+
+    const mappedReqs = (reqs.data || []).map((item: any) => ({
       ...item,
+      _source: 'blood_requirements',
       hospitalName: item.hospital_name,
       contactNumber: item.contact_number,
       patientName: item.patient_name,
@@ -499,12 +669,72 @@ export const requirementsService = {
       bloodGroup: item.blood_group,
       createdAt: item.created_at
     }));
+
+    const mappedHosps = (hosps.data || []).map((req: any) => hospitalService.mapHospitalRequest(req));
+
+    return [...mappedReqs, ...mappedHosps].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   },
   updateStatus: async (id: string, status: string) => {
+    let dbStatus = status;
+    if (status === 'Approved') dbStatus = 'ASSIGNED';
+    if (status === 'Arranged') dbStatus = 'COMPLETED';
+    if (status === 'Rejected') dbStatus = 'REJECTED';
+
     const { data, error } = await supabase
       .from('blood_requirements')
-      .update({ status })
-      .eq('id', id)
+      .update({ status: dbStatus })
+      .eq('id', id);
+    if (error) handleError(error);
+    return data;
+  },
+  submitResponse: async (requirementId: string, studentId: string) => {
+    const { data, error } = await supabase
+      .from('requirement_responses')
+      .insert({
+        requirement_id: requirementId,
+        student_id: studentId,
+        status: 'Accepted'
+      })
+      .select()
+      .single();
+    if (error) handleError(error);
+    return data;
+  },
+  getResponses: async (requirementId?: string) => {
+    let query = supabase
+      .from('requirement_responses')
+      .select('*, student:profiles(*, student_details(*))');
+
+    if (requirementId) {
+      query = query.eq('requirement_id', requirementId);
+    }
+
+    const { data, error } = await query;
+    if (error) handleError(error);
+    return (data || []).map(resp => ({
+      ...resp,
+      student: mapProfile(resp.student)
+    }));
+  },
+  getMyResponses: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('requirement_responses')
+      .select('*')
+      .eq('student_id', user.id);
+
+    if (error) handleError(error);
+    return data || [];
+  },
+  updateArrivalStatus: async (responseId: string, status: string) => {
+    const { data, error } = await supabase
+      .from('requirement_responses')
+      .update({ arrival_status: status })
+      .eq('id', responseId)
       .select()
       .single();
     if (error) handleError(error);

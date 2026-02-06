@@ -1,36 +1,54 @@
 const BackgroundSlideshow = () => {
+    const images = [
+        'https://i.postimg.cc/Kz8hQdYP/college4.jpg',
+        'https://i.postimg.cc/VkjGYqLZ/college2.jpg',
+        'https://i.postimg.cc/MKmLkCfD/college1.jpg',
+        'https://www.sonatech.ac.in/photo-gallery/campus/images/college-entrance.jpg'
+    ];
+
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden">
-            <div className="slideshow-container">
-                <div className="slide" style={{ backgroundImage: 'url(https://i.postimg.cc/Kz8hQdYP/college4.jpg)' }}></div>
-                <div className="slide" style={{ backgroundImage: 'url(https://i.postimg.cc/VkjGYqLZ/college2.jpg)' }}></div>
-                <div className="slide" style={{ backgroundImage: 'url(https://i.postimg.cc/MKmLkCfD/college1.jpg)' }}></div>
-                {/* Removed broken college3.jpg */}
-                <div className="slide" style={{ backgroundImage: 'url(https://i.postimg.cc/Kz8hQdYP/college4.jpg)' }}></div>
+        <div className="fixed inset-0 z-0 overflow-hidden bg-slate-900">
+            <div className="absolute inset-0">
+                {images.map((img, i) => (
+                    <div
+                        key={i}
+                        className="absolute inset-0 bg-cover bg-center opacity-0 animate-ken-burns"
+                        style={{
+                            backgroundImage: `url(${img})`,
+                            animationDelay: `${i * 10}s`,
+                            animationDuration: `${images.length * 10}s`
+                        }}
+                    ></div>
+                ))}
             </div>
-            <div className="fixed inset-0 bg-white/80 backdrop-blur-sm"></div>
+            {/* Dark gradient overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-900/80 backdrop-blur-[2px]"></div>
+
             <style>{`
-                .slideshow-container {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
+                @keyframes ken-burns {
+                    0% {
+                        opacity: 0;
+                        transform: scale(1) translate(0, 0);
+                    }
+                    5% {
+                        opacity: 1;
+                    }
+                    25% {
+                        opacity: 1;
+                    }
+                    30% {
+                        opacity: 0;
+                        transform: scale(1.1) translate(-2%, -2%);
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.1) translate(-2%, -2%);
+                    }
                 }
-                .slide {
-                    position: absolute;
-                    width: 100%;
-                    height: 100%;
-                    background-size: cover;
-                    background-position: center;
-                    opacity: 0;
-                    animation: slideshow 20s infinite;
-                }
-                .slide:nth-child(1) { animation-delay: 0s; }
-                .slide:nth-child(2) { animation-delay: 5s; }
-                .slide:nth-child(3) { animation-delay: 10s; }
-                .slide:nth-child(4) { animation-delay: 15s; }
-                @keyframes slideshow {
-                    0%, 20% { opacity: 1; }
-                    25%, 100% { opacity: 0; }
+                .animate-ken-burns {
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                    will-change: transform, opacity;
                 }
             `}</style>
         </div>
