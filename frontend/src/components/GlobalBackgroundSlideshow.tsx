@@ -4,9 +4,13 @@ const GlobalBackgroundSlideshow: React.FC = () => {
     return (
         <div className="fixed inset-0 z-0 pointer-events-none">
             <style>{`
+                /* Seamless fade animation: Always overlapping to prevent background color showing */
                 @keyframes cross-fade {
-                    0%, 20% { opacity: 1; }
-                    25%, 100% { opacity: 0; }
+                    0% { opacity: 0; }
+                    5% { opacity: 1; }
+                    30% { opacity: 1; }
+                    35% { opacity: 0; }
+                    100% { opacity: 0; }
                 }
                 .slideshow-img {
                     position: absolute;
@@ -14,31 +18,53 @@ const GlobalBackgroundSlideshow: React.FC = () => {
                     background-size: cover;
                     background-position: center;
                     background-repeat: no-repeat;
-                    z-index: 0;
                     width: 100%;
                     height: 100%;
+                    transition: transform 10s linear;
+                    opacity: 0;
+                }
+                /* Base layer image to ensure there is NEVER a gap/color in the back */
+                .img-base {
+                    opacity: 1;
+                    z-index: 1;
                 }
                 @media (max-width: 768px) {
                     .slideshow-img {
-                        background-position: center 20%; /* Better for mobile to see the top part of the image */
+                        background-position: center 20%;
                     }
                 }
-                /* Animation for 4 images: 24s total loop, 6s per image */
-                .img-1 { animation: cross-fade 24s infinite 0s; z-index: 4; }
-                .img-2 { animation: cross-fade 24s infinite 6s; z-index: 3; }
-                .img-3 { animation: cross-fade 24s infinite 12s; z-index: 2; }
-                .img-4 { animation: cross-fade 24s infinite 18s; z-index: 1; }
+                /* Animation for 4 images: 20s total loop, 5s per stage */
+                .img-1 { animation: cross-fade 20s infinite 0s; z-index: 5; }
+                .img-2 { animation: cross-fade 20s infinite 5s; z-index: 4; }
+                .img-3 { animation: cross-fade 20s infinite 10s; z-index: 3; }
+                .img-4 { animation: cross-fade 20s infinite 15s; z-index: 2; }
             `}</style>
 
-            <div className="slideshow-img img-1" style={{ backgroundImage: 'url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRhR6aigXwj2jbmY-USWZCWDrjVX0xaZTYsJfX69BxFfgI5-CEFJEMEneg)' }}></div>
-            <div className="slideshow-img img-2" style={{ backgroundImage: 'url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZS8lQAt52BfwWkUXJtkbwcUZDeLMnjuUNxhpCDdDqqa9dbU3AfQmvOHDm)' }}></div>
-            <div className="slideshow-img img-3" style={{ backgroundImage: 'url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqhnlgFYSbxS6RrsvWDZhqw_OQcQFLm_vfz_q1VYAGgAIpPocGuHoIUog)' }}></div>
-            <div className="slideshow-img img-4" style={{ backgroundImage: 'url(https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7LuYmGhG75d7XcgYWugueI97iVOuX0otyTIt7lPnK9HDe2_ze2-XxY5A)' }}></div>
+            {/* Base Image - Always present to prevent blue background flicker */}
+            <div className="slideshow-img img-base" style={{
+                backgroundImage: 'url(https://imkarchitects.com/images/projects/institutional/sona-college-of-arts-and-science/2.jpg)'
+            }}></div>
 
-            {/* Crystal clear overlay - subtle darkening for text readability across all portals */}
-            <div className="absolute inset-0 bg-black/15"></div>
+            {/* Animated Layers */}
+            <div className="slideshow-img img-1" style={{
+                backgroundImage: 'url(https://imkarchitects.com/images/projects/institutional/sona-college-of-arts-and-science/2.jpg)'
+            }}></div>
+            <div className="slideshow-img img-2" style={{
+                backgroundImage: 'url(https://www.sonatech.ac.in/eee/rteec22/statics/img/slider/slider2.jpg)'
+            }}></div>
+            <div className="slideshow-img img-3" style={{
+                backgroundImage: 'url(https://www.sonatech.ac.in/photo-gallery/campus/images/college-entrance.jpg)'
+            }}></div>
+            <div className="slideshow-img img-4" style={{
+                backgroundImage: 'url(https://www.sonatech.ac.in/photo-gallery/campus/images/main-building-inner-view.jpg)'
+            }}></div>
+
+            {/* Crystal clear overlay - no blur, very subtle darkening for text legibility */}
+            <div className="absolute inset-0 bg-black/20 z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10 z-10"></div>
         </div>
     );
 };
 
 export default GlobalBackgroundSlideshow;
+

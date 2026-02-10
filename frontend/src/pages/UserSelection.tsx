@@ -16,8 +16,9 @@ const UserSelection = () => {
                 </svg>
             ),
             path: '/login',
-            color: 'from-black to-black',
-            textColor: 'text-black'
+            color: 'from-blue-900 to-blue-950',
+            textColor: 'text-blue-900',
+            topBorder: 'border-t-blue-600'
         },
         {
             id: 'hospital',
@@ -30,7 +31,8 @@ const UserSelection = () => {
             ),
             path: '/hospital-login',
             color: 'from-red-600 to-red-700',
-            textColor: 'text-red-600'
+            textColor: 'text-red-600',
+            topBorder: 'border-t-red-600'
         },
         {
             id: 'admin',
@@ -42,8 +44,9 @@ const UserSelection = () => {
                 </svg>
             ),
             path: '/admin-login',
-            color: 'from-black to-black',
-            textColor: 'text-black'
+            color: 'from-slate-800 to-slate-900',
+            textColor: 'text-slate-800',
+            topBorder: 'border-t-slate-800'
         }
     ];
 
@@ -54,10 +57,11 @@ const UserSelection = () => {
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-6 pb-24">
                 <div className="w-full max-w-6xl text-center space-y-12">
                     <div className="space-y-4">
-                        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter uppercase block">
-                            <span className="text-white">SONA</span> <span className="text-red-600">BLOODLINE</span>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-[0.05em] uppercase block leading-tight">
+                            <span className="text-black px-1">WELCOME TO</span>
+                            <span className="text-red-600 px-1">SONA BLOODLINE</span>
                         </h1>
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] sm:text-xs">Select your portal to access the ecosystem</p>
+                        <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[10px]">Select your portal to access the ecosystem</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
@@ -65,7 +69,7 @@ const UserSelection = () => {
                             <button
                                 key={role.id}
                                 onClick={() => navigate(role.path)}
-                                className="group relative flex flex-col items-center p-10 bg-white/70 backdrop-blur-xl border border-purple-100 rounded-[3rem] shadow-xl shadow-purple-200/20 hover:shadow-2xl hover:shadow-indigo-200/30 transition-all duration-500 hover:-translate-y-2 text-center"
+                                className={`group relative flex flex-col items-center p-10 bg-white/80 backdrop-blur-xl border-x border-b border-purple-100 ${role.topBorder} border-t-8 rounded-[3rem] shadow-xl shadow-purple-200/20 hover:shadow-2xl hover:shadow-indigo-200/30 transition-all duration-500 hover:-translate-y-2 text-center`}
                             >
                                 <div className={`p-5 rounded-3xl bg-gradient-to-br ${role.color} text-white mb-8 transform group-hover:scale-110 transition-transform duration-500 shadow-xl shadow-indigo-100`}>
                                     {role.icon}
@@ -98,7 +102,7 @@ const UserSelection = () => {
                 <div className="whitespace-nowrap animate-marquee flex items-center">
                     {[1, 2, 3, 4].map((i) => (
                         <span key={i} className="text-white font-black uppercase tracking-[0.2em] text-[10px] px-8">
-                            DEVELOPED BY : SANJAY  | MATHIVANAN  | MOHANAPRIYA  | PRIYA VARSHINI |  PAVITHRA N | VASUDEV R | PRASANNA
+                            DEVELOPED BY : PRASANNA | SANJAY | MATHIVANNA | VASUDEV | PRIYA VARSHINI | PAVITHRA | MOHANAPRIYA
                         </span>
                     ))}
                 </div>

@@ -46,7 +46,7 @@ const AdminLogin = () => {
                     <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
                 </Link>
 
-                <div className="max-w-md w-full space-y-8 relative z-10 bg-white/70 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
+                <div className="max-w-md w-full space-y-8 relative z-10 bg-[#F3F0FF]/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
                     <div>
                         <div className="flex justify-center">
                             <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
@@ -106,7 +106,7 @@ const AdminLogin = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-[2rem] text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300 shadow-xl shadow-indigo-100 active:scale-95 h-16 items-center"
+                                className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-[2rem] text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 transition-all duration-300 shadow-xl shadow-slate-100 active:scale-95 h-16 items-center"
                             >
                                 {loading ? (
                                     <span className="flex items-center space-x-3">

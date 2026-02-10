@@ -46,7 +46,7 @@ const Login = () => {
           <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
         </Link>
 
-        <div className="max-w-md w-full space-y-8 relative z-10 bg-white/70 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
+        <div className="max-w-md w-full space-y-8 relative z-10 bg-[#F3F0FF]/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
           <div>
             <div className="flex justify-center mb-6">
               <div className="h-16 w-16 bg-purple-50 rounded-2xl border border-purple-100 flex items-center justify-center text-indigo-600 shadow-sm">
@@ -108,7 +108,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-[2rem] text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all duration-300 shadow-xl shadow-indigo-100 active:scale-95 h-16 items-center"
+                className="group relative w-full flex justify-center py-5 px-4 border border-transparent text-[10px] font-black uppercase tracking-widest rounded-[2rem] text-white bg-slate-600 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 disabled:opacity-50 transition-all duration-300 shadow-xl shadow-slate-100 active:scale-95 h-16 items-center"
               >
                 {loading ? (
                   <span className="flex items-center space-x-3">
@@ -125,7 +125,7 @@ const Login = () => {
             <div className="text-center pt-4 border-t border-purple-50">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 New to the network?{' '}
-                <Link to="/register" className="text-indigo-600 hover:text-indigo-700 transition-colors ml-1">
+                <Link to="/register" className="text-purple-600 hover:text-purple-700 transition-colors ml-1">
                   Initiate Enrollment
                 </Link>
               </p>
