@@ -96,17 +96,6 @@ const UserSelection = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Marquee Credits */}
-            <div className="fixed bottom-0 left-0 right-0 bg-red-600 py-4 overflow-hidden z-20 shadow-[0_-4px_20px_rgba(220,38,38,0.2)] border-t border-red-400/30">
-                <div className="whitespace-nowrap animate-marquee flex items-center">
-                    {[1, 2, 3, 4].map((i) => (
-                        <span key={i} className="text-white font-black uppercase tracking-[0.2em] text-[10px] px-8">
-                            DEVELOPED BY : PRASANNA | SANJAY | MATHIVANNA | VASUDEV | PRIYA VARSHINI | PAVITHRA | MOHANAPRIYA
-                        </span>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 };
