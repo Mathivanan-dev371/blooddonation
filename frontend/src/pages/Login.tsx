@@ -17,13 +17,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const user = await login(username, password);
+      const user = await login(username.trim().toUpperCase(), password.trim().toUpperCase());
       if (user.role !== 'STUDENT') {
         const roleName = user.role.toLowerCase();
         logout();
         throw new Error(`This account is for ${roleName}s. Please use the ${roleName} portal.`);
       }
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -36,15 +36,15 @@ const Login = () => {
       <GlobalBackgroundSlideshow />
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate('/', { replace: true })}
           className="absolute top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
-        </Link>
+        </button>
 
         <div className="max-w-md w-full space-y-8 relative z-10 bg-[#F3F0FF]/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
           <div>
@@ -73,23 +73,23 @@ const Login = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="identifier" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                  Admission ID / Email
+                  Admission Number
                 </label>
                 <input
                   id="identifier"
                   name="identifier"
                   type="text"
-                  autoComplete="email"
+                  autoComplete="username"
                   required
                   className="appearance-none relative block w-full px-5 py-4 bg-purple-50/30 border border-purple-100 text-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm"
-                  placeholder="Secure Identity"
+                  placeholder="Enter your Admission Number"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </div>
               <div>
                 <label htmlFor="password" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">
-                  Access Key
+                  Password (Same as Admission Number)
                 </label>
                 <input
                   id="password"
@@ -97,7 +97,7 @@ const Login = () => {
                   type="password"
                   required
                   className="appearance-none relative block w-full px-5 py-4 bg-purple-50/30 border border-purple-100 text-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm tracking-widest"
-                  placeholder="••••••••"
+                  placeholder="Enter your Admission Number"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -125,7 +125,7 @@ const Login = () => {
             <div className="text-center pt-4 border-t border-purple-50">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 New to the network?{' '}
-                <Link to="/register" className="text-purple-600 hover:text-purple-700 transition-colors ml-1">
+                <Link to="/register" replace className="text-purple-600 hover:text-purple-700 transition-colors ml-1">
                   Initiate Enrollment
                 </Link>
               </p>

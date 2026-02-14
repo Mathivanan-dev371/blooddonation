@@ -21,15 +21,19 @@ function RoleRoute({ children, allowedRoles }: { children: React.ReactNode; allo
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    );
   }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/" replace />;
   }
 
   if (!allowedRoles.includes(user.role) && !allowedRoles.includes(user.role?.toUpperCase())) {
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
@@ -45,26 +49,44 @@ function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <Layout>
-            <Dashboard />
-          </Layout>
+          <RoleRoute allowedRoles={['STUDENT']}>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </RoleRoute>
         }
       />
       <Route
         path="/admin"
-        element={<AdminPanel />}
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <AdminPanel />
+          </RoleRoute>
+        }
       />
       <Route
         path="/admin/history"
-        element={<AdminRequestHistory />}
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <AdminRequestHistory />
+          </RoleRoute>
+        }
       />
       <Route
         path="/admin/hospitals"
-        element={<HospitalList />}
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <HospitalList />
+          </RoleRoute>
+        }
       />
       <Route
         path="/admin/responses"
-        element={<RequestResponses />}
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <RequestResponses />
+          </RoleRoute>
+        }
       />
       <Route
         path="/hospital"

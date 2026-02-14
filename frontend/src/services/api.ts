@@ -31,12 +31,18 @@ const mapStudentDetails = (details: any) => {
 
 const mapProfile = (profile: any) => {
   if (!profile) return null;
+  const studentDetails = mapStudentDetails(profile.student_details);
+
+  // Choose the best name for display (priority: student name > hospital name > username)
+  const displayName = studentDetails?.name || profile.hospital_name || profile.username;
+
   return {
     ...profile,
+    displayName,
     trustScore: profile.trust_score ?? 50,
     isAvailable: profile.is_available ?? false,
     isActive: profile.is_active ?? true,
-    studentDetails: mapStudentDetails(profile.student_details),
+    studentDetails,
   };
 };
 
@@ -46,27 +52,18 @@ export const authService = {
     // or just ignore if we trust the persistent session.
   },
   login: async (usernameOrEmail: string, password: string) => {
-    // Admin and Hospital Logins now use REAL Supabase auth
-    // Create users via: Supabase Dashboard → Authentication → Add User
-
-    // Hospital Login - removed mock, now uses REAL Supabase auth
-    // Create hospital user via: Supabase Dashboard → Authentication → Add User
-
     const identifier = usernameOrEmail.trim();
     let email = identifier;
 
-    // Advanced Identifier Lookup (Check if input is Admission Number, Email, or Username)
     if (!identifier.includes('@')) {
       try {
-        // 1. Check if it's an Admission Number (admission_number)
         const { data: studentMatch, error: studentError } = await supabase
           .from('student_details')
           .select('user_id')
-          .eq('admission_number', identifier)
+          .ilike('admission_number', identifier)
           .maybeSingle();
 
         if (studentMatch && !studentError) {
-          // If admission number match found, get the email from profiles
           const { data: profile } = await supabase
             .from('profiles')
             .select('email')
@@ -76,13 +73,11 @@ export const authService = {
           if (profile?.email) {
             email = profile.email;
           }
-        }
-        // 2. Fallback: Check if it's a Username
-        else {
+        } else {
           const { data: profile, error: profileLookupError } = await supabase
             .from('profiles')
             .select('email')
-            .eq('username', identifier)
+            .ilike('username', identifier)
             .maybeSingle();
 
           if (profile && profile.email && !profileLookupError) {
@@ -94,23 +89,28 @@ export const authService = {
       }
     }
 
-    // Validation: If it's not an email, we MUST have resolved it to one by now
     if (!identifier.includes('@') && email === identifier) {
       throw new Error('No account found with this Admission Number or Username.');
     }
 
-    let { data, error } = await supabase.auth.signInWithPassword({
+    console.log(`Login Attempt: Identifier="${identifier}", ResolvedEmail="${email}"`);
+
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
-      // Fallback: Check manual hospital_accounts registry
+    if (authError) {
+      console.error('Supabase Login Error:', authError);
+      if (authError.message.includes('Email not confirmed')) {
+        throw new Error('Identity verification pending. Please confirm your email address or contact the administrator to disable email confirmation.');
+      }
+
       const { data: manualAcc, error: manualError } = await supabase
         .from('hospital_accounts')
         .select('*')
         .eq('email', email)
-        .eq('password', password) // In a real app, this should be hashed
+        .eq('password', password)
         .maybeSingle();
 
       if (manualAcc && !manualError) {
@@ -128,32 +128,27 @@ export const authService = {
           token: 'manual-hospital-token-' + manualAcc.id
         };
       }
-      handleError(error);
+      handleError(authError);
     }
 
-    if (!data.user) throw new Error('Login failed: No user data returned');
+    if (!authData.user) throw new Error('Login failed: No user data returned');
 
-    // Fetch profile and details to match previous API response structure
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*, student_details(*)')
-      .eq('id', data.user.id)
+      .eq('id', authData.user.id)
       .maybeSingle();
 
-    if (profileError) {
-      console.error('Error fetching profile during login:', profileError);
-    }
+    if (profileError) console.error('Error fetching profile during login:', profileError);
 
     if (!profile) {
-      // If profile is missing, it means the user has been "deleted" or deactivated by admin
       throw new Error('Your account is no longer active. Please contact administration for support.');
     }
 
     const mappedProfile = mapProfile(profile);
-
     return {
-      user: { ...data.user, ...mappedProfile },
-      token: data.session?.access_token,
+      user: { ...authData.user, ...mappedProfile },
+      token: authData.session?.access_token || 'supabase-token',
     };
   },
   register: async (registrationData: any) => {
@@ -177,7 +172,11 @@ export const authService = {
       },
     });
 
-    if (authError) handleError(authError);
+    if (authError) {
+      if (!authError.message.includes('Error sending confirmation email')) {
+        handleError(authError);
+      }
+    }
     if (!authData.user) throw new Error('Registration failed: No user returned');
 
     // Fetch full profile

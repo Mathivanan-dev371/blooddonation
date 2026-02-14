@@ -68,7 +68,7 @@ const UserSelection = () => {
                         {roles.map((role) => (
                             <button
                                 key={role.id}
-                                onClick={() => navigate(role.path)}
+                                onClick={() => navigate(role.path, { replace: true })}
                                 className={`group relative flex flex-col items-center p-10 bg-white/80 backdrop-blur-xl border-x border-b border-purple-100 ${role.topBorder} border-t-8 rounded-[3rem] shadow-xl shadow-purple-200/20 hover:shadow-2xl hover:shadow-indigo-200/30 transition-all duration-500 hover:-translate-y-2 text-center`}
                             >
                                 <div className={`p-5 rounded-3xl bg-gradient-to-br ${role.color} text-white mb-8 transform group-hover:scale-110 transition-transform duration-500 shadow-xl shadow-indigo-100`}>

@@ -100,21 +100,28 @@ const RequestResponses = () => {
 
     return (
         <div className="min-h-screen bg-[#F3F0FF] pb-12">
+            {/* Floating Back Button - To match Login portals */}
+            <button
+                onClick={() => navigate('/admin', { replace: true })}
+                className="fixed top-6 right-6 z-[100] flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span>
+            </button>
+
             {/* Header */}
             <div className="bg-white/70 backdrop-blur-xl border-b border-purple-100 shadow-sm sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => navigate('/admin')}
-                            className="p-2.5 bg-purple-50 rounded-xl text-purple-600 hover:bg-purple-100 transition-all border border-purple-100"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                        </button>
-                        <div>
-                            <h1 className="text-xl font-black text-slate-800 uppercase tracking-wider">Donor Responses</h1>
-                            <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mt-1">
-                                Request #{requestId?.slice(0, 8)} • {requestDetails?.bloodGroup}
-                            </p>
+                        <div className="ml-28 sm:ml-36 md:ml-44">
+                            <div>
+                                <h1 className="text-xl font-black text-slate-800 uppercase tracking-wider">Donor Responses</h1>
+                                <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mt-1">
+                                    Request #{requestId?.slice(0, 8)} • {requestDetails?.bloodGroup}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

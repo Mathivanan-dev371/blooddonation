@@ -78,7 +78,7 @@ const HospitalRegisterRequest = () => {
             {/* Content */}
             <div className="relative z-10">
                 <button
-                    onClick={() => navigate('/hospital-login')}
+                    onClick={() => navigate(-1)}
                     className="fixed top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                     title="Back to Login"
                 >

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
@@ -22,13 +22,13 @@ const Register = () => {
     bloodGroup: '',
     collegeName: '',
     email: '',
-    password: '',
-    confirmPassword: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registeredStudent, setRegisteredStudent] = useState<RegisteredStudent | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const navigate = useNavigate();
 
   const colleges = [
     'Sona College of Technology',
@@ -42,7 +42,18 @@ const Register = () => {
   };
 
   const checkDuplicates = async () => {
-    // Check for duplicate admission number (registration_number in student_details)
+    // Check for duplicate email in profiles
+    const { data: emailData } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('email', formData.email)
+      .maybeSingle();
+
+    if (emailData) {
+      return 'An account with this email already exists';
+    }
+
+    // Check for duplicate admission number in student_details
     const { data: admissionData } = await supabase
       .from('student_details')
       .select('admission_number')
@@ -61,13 +72,8 @@ const Register = () => {
     setError('');
 
     // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.admissionNumber.length < 6) {
+      setError('Admission number must be at least 6 characters');
       return;
     }
 
@@ -82,15 +88,20 @@ const Register = () => {
         return;
       }
 
-      // 1. Sign Up the user
+      // Use admission number as password for simplicity (normalized to uppercase)
+      const admissionUpper = formData.admissionNumber.trim().toUpperCase();
+      const password = admissionUpper;
+
+      console.log('Attempting sign up with:', formData.email);
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+        email: formData.email.trim(),
+        password: password,
         options: {
           data: {
             name: formData.name,
             role: 'STUDENT',
-            admission_number: formData.admissionNumber,
+            admission_number: admissionUpper,
             phone_number: formData.phoneNumber,
             blood_group: formData.bloodGroup,
             department: formData.department,
@@ -99,25 +110,39 @@ const Register = () => {
         }
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Account creation failed.');
+      if (authError) {
+        console.error('Supabase SignUp Error:', authError);
+        if (authError.message.includes('Error sending confirmation email')) {
+          setError('Account created, but there was an error sending the confirmation email. Please check your Supabase Email settings or disable "Confirm Email" in the Supabase Dashboard (Authentication -> Settings).');
+        } else {
+          throw authError;
+        }
+      }
+
+      console.log('Auth data returned:', authData);
+
+      if (!authData || !authData.user) {
+        console.error('No user object returned from Supabase. AuthData:', authData);
+        throw new Error('Account creation failed: No user data returned from the server (500 error). If you are testing, please try running the REGISTRATION_500_ERROR_FIX.sql script in your Supabase SQL Editor.');
+      }
 
       const userId = authData.user.id;
 
-      // 2. Create the profile manually
+      // 2. Create the profile manually (MUST succeed before student_details)
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: userId,
           email: formData.email,
-          username: formData.name,
+          username: formData.email, // Use email as username (guaranteed unique)
           role: 'STUDENT',
           is_active: true,
           is_available: true
         });
 
       if (profileError) {
-        console.warn('Profile creation warning:', profileError);
+        console.error('Profile creation failed:', profileError);
+        throw new Error(`Profile creation failed: ${profileError.message}`);
       }
 
       // 3. Save student details including phone number
@@ -126,7 +151,7 @@ const Register = () => {
         .upsert({
           user_id: userId,
           name: formData.name,
-          admission_number: formData.admissionNumber,
+          admission_number: admissionUpper,
           phone_number: formData.phoneNumber,
           department: formData.department,
           blood_group: formData.bloodGroup,
@@ -148,7 +173,12 @@ const Register = () => {
         email: formData.email,
       });
       setIsSuccess(true);
-      alert("Verification mail is sent to your respective email, please verify it!");
+
+      const successMsg = authError?.message.includes('Error sending confirmation email')
+        ? "Account created! However, the confirmation email couldn't be sent. You might need to disable email confirmation in Supabase to login."
+        : "Verification mail is sent to your respective email, please verify it!";
+
+      alert(successMsg);
 
     } catch (err: any) {
       console.error('Final Registration Error:', err);
@@ -195,7 +225,7 @@ const Register = () => {
                   <span className="px-3 py-1 rounded-xl text-xs font-black bg-red-50 text-red-600 border border-red-100">{registeredStudent.bloodGroup}</span>
                 </div>
                 <div className="flex justify-between py-4">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Identity Node</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">College Name</span>
                   <span className="text-sm font-black text-slate-800 uppercase leading-none">{registeredStudent.collegeName}</span>
                 </div>
               </div>
@@ -217,15 +247,15 @@ const Register = () => {
       <GlobalBackgroundSlideshow />
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate(-1)}
           className="absolute top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
-        </Link>
+        </button>
 
         <div className="relative z-10 max-w-2xl w-full">
           <div className="text-center mb-10">
@@ -255,8 +285,8 @@ const Register = () => {
                   <input name="department" type="text" required placeholder="e.g., Computer Science" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.department} onChange={handleChange} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admission ID</label>
-                  <input name="admissionNumber" type="text" required placeholder="Registration No" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.admissionNumber} onChange={handleChange} />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admission Number</label>
+                  <input name="admissionNumber" type="text" required placeholder="Admission Number" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.admissionNumber} onChange={handleChange} />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Terminal</label>
@@ -283,13 +313,18 @@ const Register = () => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Contact Routing (Email)</label>
                   <input name="email" type="email" required placeholder="scholar@email.com" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800" value={formData.email} onChange={handleChange} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Access Key</label>
-                  <input name="password" type="password" required placeholder="••••••••" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800 tracking-widest" value={formData.password} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Key</label>
-                  <input name="confirmPassword" type="password" required placeholder="••••••••" className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-bold text-sm text-slate-800 tracking-widest" value={formData.confirmPassword} onChange={handleChange} />
+              </div>
+
+              {/* Info Note */}
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 mt-4">
+                <div className="flex items-start space-x-3">
+                  <svg className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1">Login Credentials</p>
+                    <p className="text-xs text-indigo-700 font-semibold">Your <span className="font-black">Admission Number</span> will be used as both your username and password for login.</p>
+                  </div>
                 </div>
               </div>
 
@@ -309,7 +344,7 @@ const Register = () => {
             </form>
             <div className="mt-8 text-center pt-8 border-t border-purple-50">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                Already integrated? <Link to="/login" className="text-indigo-600 hover:text-indigo-700 transition-all ml-1 underline decoration-2 underline-offset-4">Authorize Entry</Link>
+                Already integrated? <Link to="/login" replace className="text-indigo-600 hover:text-indigo-700 transition-all ml-1 underline decoration-2 underline-offset-4">Authorize Entry</Link>
               </p>
             </div>
           </div>

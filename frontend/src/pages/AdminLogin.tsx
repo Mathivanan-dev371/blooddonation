@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
@@ -23,7 +23,7 @@ const AdminLogin = () => {
                 logout();
                 throw new Error(`This account is for ${roleName}s. Please use the ${roleName} portal.`);
             }
-            navigate('/admin');
+            navigate('/admin', { replace: true });
         } catch (err: any) {
             setError(err.message || 'Login failed');
         } finally {
@@ -36,15 +36,15 @@ const AdminLogin = () => {
             <GlobalBackgroundSlideshow />
             <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-                <Link
-                    to="/"
+                <button
+                    onClick={() => navigate('/', { replace: true })}
                     className="absolute top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                     <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
-                </Link>
+                </button>
 
                 <div className="max-w-md w-full space-y-8 relative z-10 bg-[#F3F0FF]/80 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">
                     <div>

@@ -129,7 +129,7 @@ const AdminPanel = () => {
   };
 
   const handleViewResponses = (req: any) => {
-    navigate(`/admin/responses?id=${req.id}&source=${req._source}`);
+    navigate(`/admin/responses?id=${req.id}&source=${req._source}`, { replace: true });
   };
 
   const handleMarkArranged = async (req: any) => {
@@ -185,7 +185,7 @@ const AdminPanel = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const getTimeSinceActive = (lastActive: string) => {
@@ -217,18 +217,23 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
+      {/* Floating Back Button - To match Login portals */}
+      <button
+        onClick={() => navigate('/', { replace: true })}
+        className="fixed top-6 right-6 z-[100] flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span>
+      </button>
+
       {/* Header */}
       <div className="bg-white/70 backdrop-blur-xl border-b border-purple-100 sticky top-0 z-50 shadow-sm relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 sm:gap-4">
             <div className="flex items-center space-x-4 sm:space-x-8">
-              <button
-                onClick={() => navigate('/')}
-                className="p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-600 transition-all border border-purple-100 ml-28 sm:ml-36 md:ml-44"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-              </button>
-              <div className="block">
+              <div className="block ml-28 sm:ml-36 md:ml-44">
                 <h1 className="text-base sm:text-lg font-black text-slate-800 uppercase tracking-tight">Admin Control</h1>
                 <p className="text-purple-400 text-[10px] font-bold tracking-widest mt-0.5">SONA BLOODLINE</p>
               </div>
@@ -249,7 +254,7 @@ const AdminPanel = () => {
                   Registry
                 </button>
                 <button
-                  onClick={() => navigate('/admin/history')}
+                  onClick={() => navigate('/admin/history', { replace: true })}
                   className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-all"
                 >
                   History

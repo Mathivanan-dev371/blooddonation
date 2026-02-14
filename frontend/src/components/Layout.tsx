@@ -11,7 +11,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/', { replace: true });
   };
 
   return (
@@ -21,12 +21,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between h-16 md:h-20">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center ml-28 sm:ml-44">
-                <h1 className="text-xl font-black text-slate-800 tracking-tighter uppercase">BloodLine</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {user?.role === 'STUDENT' && (
                   <Link
                     to="/dashboard"
+                    replace
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
                     Dashboard
@@ -35,6 +35,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {user?.role === 'ADMIN' && (
                   <Link
                     to="/admin"
+                    replace
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ml-16 sm:ml-20"
                   >
                     Admin Panel
@@ -43,6 +44,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 {user?.role === 'HOSPITAL' && (
                   <Link
                     to="/hospital"
+                    replace
                     className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                   >
                     Hospital Requests
@@ -52,7 +54,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <div className="flex items-center">
               <span className="text-gray-700 mr-4">
-                {user?.username} ({user?.role})
+                {user?.displayName || user?.username} ({user?.role})
               </span>
               <button
                 onClick={handleLogout}

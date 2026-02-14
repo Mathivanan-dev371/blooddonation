@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { requirementsService } from '../services/api';
 import { formatDate } from '../utils/dateUtils';
 
 const AdminRequestHistory = () => {
+    const navigate = useNavigate();
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterHospital, setFilterHospital] = useState('');
@@ -55,17 +56,15 @@ const AdminRequestHistory = () => {
 
             <div className="max-w-7xl mx-auto relative z-10">
                 {/* Back Button */}
-                <Link
-                    to="/admin"
-                    className="inline-flex items-center space-x-2 text-slate-400 hover:text-indigo-600 transition-colors mb-8 group ml-28 sm:ml-36 md:ml-44"
+                <button
+                    onClick={() => navigate('/admin', { replace: true })}
+                    className="fixed top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                 >
-                    <div className="p-2 rounded-lg bg-white border border-purple-100 group-hover:bg-purple-50 transition-colors shadow-sm">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </div>
-                    <span className="font-black text-[10px] sm:text-xs tracking-widest uppercase">Back to Dashboard</span>
-                </Link>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span>
+                </button>
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                     <div>
@@ -151,6 +150,7 @@ const AdminRequestHistory = () => {
 
                                     <Link
                                         to={`/admin/responses?requestId=${req.id}`}
+                                        replace
                                         className="text-[10px] font-black text-indigo-400 hover:text-indigo-700 uppercase tracking-widest transition-colors"
                                     >
                                         View Details →

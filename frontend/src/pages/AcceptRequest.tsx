@@ -104,7 +104,7 @@ const AcceptRequest = () => {
                     <h2 className="text-2xl font-black text-slate-800 mb-2">Thank You!</h2>
                     <p className="text-slate-400 mb-8 font-bold uppercase tracking-widest text-[10px]">Your willingness to donate has been registered. The admin/hospital will contact you soon.</p>
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/dashboard', { replace: true })}
                         className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-[2rem] font-black uppercase tracking-widest transition-all shadow-xl shadow-indigo-100 active:scale-95 text-[10px]"
                     >
                         Go to Dashboard
@@ -117,7 +117,7 @@ const AcceptRequest = () => {
     return (
         <div className="min-h-screen bg-[#F3F0FF] flex flex-col items-center justify-center px-6 py-12 relative overflow-hidden">
             <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/', { replace: true })}
                 className="fixed top-6 right-6 z-30 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                 title="Back to Selection"
             >

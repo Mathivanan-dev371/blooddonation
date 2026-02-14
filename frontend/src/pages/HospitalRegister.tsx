@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import GlobalBackgroundSlideshow from '../components/GlobalBackgroundSlideshow';
 
@@ -28,8 +28,10 @@ const HospitalRegister = () => {
         setLoading(true);
 
         try {
+            console.log('Attempting hospital registration:', formData.email);
+
             // Register with HOSPITAL role and additional details in metadata
-            const { error: authError } = await supabase.auth.signUp({
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
@@ -42,9 +44,22 @@ const HospitalRegister = () => {
                 }
             });
 
-            if (authError) throw authError;
+            if (authError) {
+                console.error('Hospital SignUp Error:', authError);
+                if (authError.message.includes('Error sending confirmation email')) {
+                    setError('Account created, but there was an error sending the confirmation email. Please check your Supabase Email settings or disable "Confirm Email" in the Supabase Dashboard (Authentication -> Settings).');
+                } else {
+                    throw authError;
+                }
+            }
 
-            alert("verification mail is sent to your respective email,verify it !!");
+            console.log('Hospital Auth success:', authData);
+
+            const successMsg = authError?.message.includes('Error sending confirmation email')
+                ? "Account created! However, the confirmation email couldn't be sent. You might need to disable email confirmation in Supabase to login."
+                : "verification mail is sent to your respective email,verify it !!";
+
+            alert(successMsg);
             navigate('/hospital-login');
         } catch (err: any) {
             setError(err.message || 'Registration failed');
@@ -58,15 +73,15 @@ const HospitalRegister = () => {
             <GlobalBackgroundSlideshow />
             <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
 
-                <Link
-                    to="/hospital-login"
+                <button
+                    onClick={() => navigate(-1)}
                     className="absolute top-6 left-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span className="text-[10px] font-black uppercase tracking-widest">Back to Login</span>
-                </Link>
+                    <span className="text-[10px] font-black uppercase tracking-widest">Back</span>
+                </button>
 
                 <div className="max-w-md w-full space-y-8 relative z-10">
                     <div className="bg-white/70 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl shadow-purple-200/20 border border-purple-100">

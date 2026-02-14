@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 
 interface Hospital {
@@ -11,6 +11,7 @@ interface Hospital {
 }
 
 const HospitalList = () => {
+    const navigate = useNavigate();
     const [hospitals, setHospitals] = useState<Hospital[]>([]);
     const [loading, setLoading] = useState(true);
     const [showAddForm, setShowAddForm] = useState(false);
@@ -124,17 +125,15 @@ const HospitalList = () => {
 
             <div className="max-w-5xl mx-auto relative z-10">
                 {/* Back Button */}
-                <Link
-                    to="/admin"
-                    className="inline-flex items-center space-x-2 text-purple-600 hover:text-indigo-600 transition-colors mb-6 sm:mb-8 group"
+                <button
+                    onClick={() => navigate('/admin', { replace: true })}
+                    className="fixed top-6 right-6 z-50 flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-all duration-300 bg-white/70 backdrop-blur-xl px-4 py-2 rounded-xl border border-purple-100 shadow-sm"
                 >
-                    <div className="p-2.5 rounded-xl bg-purple-50 group-hover:bg-purple-100 transition-all border border-purple-100 shadow-sm">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </div>
-                    <span className="font-black text-[10px] sm:text-xs tracking-widest uppercase ml-2">Control Center</span>
-                </Link>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    <span className="text-[10px] font-black uppercase tracking-widest leading-none">Back</span>
+                </button>
 
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 sm:gap-8 mb-8 sm:mb-12">
                     <div className="flex-1">

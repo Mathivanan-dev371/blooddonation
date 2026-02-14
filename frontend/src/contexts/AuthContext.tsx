@@ -5,6 +5,7 @@ import { supabase } from '../services/supabase';
 interface User {
   id: string;
   username: string;
+  displayName?: string;
   role: 'STUDENT' | 'ADMIN' | 'HOSPITAL';
   trustScore: number;
   isAvailable?: boolean;
@@ -129,8 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.signOut();
     setToken(null);
     setUser(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
+    localStorage.clear(); // Wipe everything to completely "forget" login info
   };
 
   return (
