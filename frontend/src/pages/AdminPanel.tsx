@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { userService, requirementsService, hospitalService } from '../services/api';
+import { userService, requirementsService, hospitalService, notificationService } from '../services/api';
 import { supabase } from '../services/supabase';
 
 const AdminPanel = () => {
@@ -23,6 +23,7 @@ const AdminPanel = () => {
     location: ''
   });
   const [processingRegistry, setProcessingRegistry] = useState(false);
+  const [sendingNotify, setSendingNotify] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -104,7 +105,28 @@ const AdminPanel = () => {
   };
 
 
-  const handleSendEmail = async (req: any) => {
+  const handleNotify = async (req: any) => {
+    // If request is already approved, send notification
+    if (req.status === 'Approved' || req.status === 'ASSIGNED') {
+      if (req.notificationSent) {
+        const confirmResend = window.confirm('Notifications have already been sent for this request. Do you want to send them again?');
+        if (!confirmResend) return;
+      }
+      setSendingNotify(req.id);
+      try {
+        const result = await notificationService.sendRequestNotification(req);
+        alert(`Notifications sent to ${result?.count || 0} matching donors!`);
+        loadData();
+      } catch (error) {
+        console.error('Failed to send notifications:', error);
+        alert('Failed to send notifications. Checks console for details.');
+      } finally {
+        setSendingNotify(null);
+      }
+      return;
+    }
+
+    // Approval Logic
     const eligibleStudents = users.filter(u =>
       u.studentDetails?.bloodGroup?.replace(/\s/g, '').toUpperCase() === req.bloodGroup?.replace(/\s/g, '').toUpperCase() && u.isAvailable
     );
@@ -120,11 +142,11 @@ const AdminPanel = () => {
       } else {
         await requirementsService.updateStatus(req.id, 'Approved');
       }
-      alert(`Request Approved! Notification sent to ${eligibleStudents.length} donors.`);
+      alert(`Request Approved! You can now click "Notify" to send FCM notifications.`);
       loadData();
     } catch (error) {
       console.error('Failed to approve request:', error);
-      alert('Failed to approve/notify request.');
+      alert('Failed to approve request.');
     }
   };
 
@@ -335,11 +357,22 @@ const AdminPanel = () => {
 
                     <div className="grid grid-cols-2 gap-3 mt-auto">
                       <button
-                        onClick={() => handleSendEmail(req)}
-                        className={`flex items-center justify-center py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${(req.status === 'Approved' || req.status === 'ASSIGNED') ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                          }`}
+                        onClick={() => handleNotify(req)}
+                        disabled={sendingNotify === req.id}
+                        className={`flex items-center justify-center py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${req.notificationSent
+                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100'
+                            : (req.status === 'Approved' || req.status === 'ASSIGNED')
+                              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          } ${sendingNotify === req.id ? 'opacity-50 cursor-wait' : ''}`}
                       >
-                        {(req.status === 'Approved' || req.status === 'ASSIGNED') ? 'Notify' : 'Approve'}
+                        {sendingNotify === req.id
+                          ? 'Sending...'
+                          : req.notificationSent
+                            ? 'Notified ✓'
+                            : (req.status === 'Approved' || req.status === 'ASSIGNED')
+                              ? 'Notify'
+                              : 'Approve'}
                       </button>
                       <button
                         onClick={() => handleViewResponses(req)}
@@ -410,6 +443,7 @@ const AdminPanel = () => {
                     <tr className="bg-purple-50/50 border-b border-purple-100">
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Name</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Blood</th>
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Year</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Dept Details</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Credit Score</th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Phone No</th>
@@ -439,6 +473,9 @@ const AdminPanel = () => {
                           </td>
                           <td className="px-6 py-5">
                             <span className="px-2 py-1 bg-red-50 text-red-500 rounded-lg font-black text-xs ring-1 ring-red-100">{u.studentDetails?.bloodGroup}</span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <p className="text-xs font-black text-slate-600 uppercase">{u.studentDetails?.year || 'N/A'}</p>
                           </td>
                           <td className="px-6 py-5">
                             <p className="text-xs font-black text-slate-600 uppercase leading-none">{u.studentDetails?.department}</p>
@@ -508,6 +545,10 @@ const AdminPanel = () => {
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                           <span className="text-slate-500">Department</span>
                           <span className="text-slate-300 text-right">{u.studentDetails?.department}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                          <span className="text-slate-500">Year</span>
+                          <span className="text-slate-300 text-right">{u.studentDetails?.year || 'N/A'}</span>
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                           <span className="text-slate-500">Credit Score</span>

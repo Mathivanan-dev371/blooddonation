@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService, userService } from '../services/api';
+import { authService, userService, notificationService } from '../services/api';
 import { supabase } from '../services/supabase';
 
 interface User {
@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rnFcmToken, setRnFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
     // 1. Try to recover from LocalStorage first (Critical for Demo/Mock persistence)
@@ -38,9 +39,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
       setLoading(false);
-      // Optional: Re-verify with backend if it's a real token, but for Demo we trust it
-      // Only if it looks like a real JWT maybe?
-      // But let's check Supabase session too just in case it's a real session
     }
 
     // 2. Check Supabase active session (Overrides localstorage if valid session found)
@@ -49,8 +47,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(session.access_token);
         fetchProfile(session.user.id);
       } else {
-        // If Supabase has no session, but we have localStorage (Demo user), we keep it.
-        // If neither, we stay logged out.
         if (!storedUser) setLoading(false);
       }
     });
@@ -59,28 +55,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setToken(session.access_token);
         fetchProfile(session.user.id);
-        // Also update local storage for consistency
         localStorage.setItem('auth_token', session.access_token);
-      } else {
-        // Only clear if we are using Supabase flow.
-        // If we are logged in as Demo user, supabase might fire 'SIGNED_OUT' initially?
-        // No, onAuthStateChange fires on distinct events.
-        // If we explicitly sign out via Supabase, we should clear everything.
       }
     });
 
-    return () => subscription.unsubscribe();
+    // 3. Listen for FCM Token from React Native Bridge
+    const handleRNMessage = (event: any) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data?.type === 'FCM_TOKEN' && data?.token) {
+          console.log('Received FCM Token from RN:', data.token);
+          setRnFcmToken(data.token);
+          localStorage.setItem('rn_fcm_token', data.token);
+        }
+      } catch (e) {
+        // Not JSON or other message
+      }
+    };
+
+    const handleCustomEvent = (event: any) => {
+      if (event.detail?.token) {
+        console.log('Received FCM Token from custom event:', event.detail.token);
+        setRnFcmToken(event.detail.token);
+        localStorage.setItem('rn_fcm_token', event.detail.token);
+      }
+    };
+
+    window.addEventListener('message', handleRNMessage);
+    window.addEventListener('rn_fcm_token' as any, handleCustomEvent);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('message', handleRNMessage);
+      window.removeEventListener('rn_fcm_token' as any, handleCustomEvent);
+    };
   }, []);
+
+  // Sync session with FCM token when both are available
+  useEffect(() => {
+    const syncFcmToken = async () => {
+      const tokenToSave = rnFcmToken || localStorage.getItem('rn_fcm_token');
+      if (user && tokenToSave) {
+        try {
+          console.log('Syncing FCM token for user:', user.id);
+          await notificationService.saveToken(tokenToSave, 'android');
+        } catch (error) {
+          console.error('Error syncing FCM token:', error);
+        }
+      }
+    };
+
+    if (user && !loading) {
+      syncFcmToken();
+    }
+  }, [user, rnFcmToken, loading]);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const profile = await userService.getProfile(); // This uses supabase.auth.getUser internally
+      const profile = await userService.getProfile();
       const fullUser = { ...profile, id: userId };
       setUser(fullUser);
       localStorage.setItem('auth_user', JSON.stringify(fullUser));
     } catch (error) {
       console.error("Error fetching profile", error);
-      // If profile is missing (deleted by admin), logout the user immediately
       logout();
     } finally {
       setLoading(false);
@@ -89,12 +126,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (usernameOrEmail: string, password: string) => {
     const response = await authService.login(usernameOrEmail, password);
-    // authService.login now returns { user, token }. 
-    // The onAuthStateChange listener will actually pick up the session change too.
-    // But setting here ensures immediate feedback.
-    // setToken(response.token || null);
-    // setUser(response.user);
-    // Persist immediately on explicit login
     const t = response.token || '';
     setToken(t);
     setUser(response.user);
@@ -112,8 +143,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setUser(demoUser);
     setToken('demo-token');
-
-    // Persist Demo Login
     localStorage.setItem('auth_token', 'demo-token');
     localStorage.setItem('auth_user', JSON.stringify(demoUser));
   };
@@ -130,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.signOut();
     setToken(null);
     setUser(null);
-    localStorage.clear(); // Wipe everything to completely "forget" login info
+    localStorage.clear();
   };
 
   return (

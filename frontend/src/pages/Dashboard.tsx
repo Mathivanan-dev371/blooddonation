@@ -155,7 +155,7 @@ const Dashboard = () => {
             className="w-full h-full object-cover opacity-80"
           />
 
-          {/* Dynamic Blood Group Overlay - Tight crop to hide 'A' while fitting the text size */}
+          {/* Dynamic Blood Group Overlay */}
           <div className="absolute left-[32.3%] top-[48.3%] transform -translate-x-1/2 -translate-y-1/2 z-20">
             <div className="bg-[#fcfcfc] px-1 md:px-2 py-0.5 rounded-sm flex items-center justify-center">
               <span className="text-xl sm:text-4xl md:text-5xl lg:text-7xl font-black text-slate-900 leading-none select-none">
@@ -164,10 +164,32 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent flex items-end p-4 sm:p-6 md:p-8">
-            <div>
-              <h2 className="text-white text-lg sm:text-2xl md:text-3xl font-black uppercase tracking-tight">SONA</h2>
-              <p className="text-indigo-300 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] mt-1">Official Donor Dashboard</p>
+          {/* Student Details Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/50 to-transparent flex items-end p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between w-full gap-2">
+              <div>
+                <p className="text-indigo-300 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.25em] mb-1">Official Donor Dashboard</p>
+                <h2 className="text-white text-base sm:text-2xl md:text-3xl font-black uppercase tracking-tight leading-tight">
+                  {profile.displayName || studentDetails.name || 'Student'}
+                </h2>
+                <p className="text-slate-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest mt-1">
+                  {studentDetails.department || ''}
+                  {studentDetails.department && studentDetails.year ? ' · ' : ''}
+                  {studentDetails.year || ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-3">
+                {studentDetails.bloodGroup && (
+                  <span className="bg-red-600/90 backdrop-blur-sm text-white text-xs sm:text-sm font-black px-3 py-1 rounded-xl border border-red-400/30 shadow-lg">
+                    {studentDetails.bloodGroup}
+                  </span>
+                )}
+                {studentDetails.collegeName && (
+                  <span className="hidden sm:inline-block bg-white/10 backdrop-blur-sm text-white/80 text-[9px] font-black px-3 py-1 rounded-xl border border-white/10 uppercase tracking-widest max-w-[200px] truncate">
+                    {studentDetails.collegeName}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -224,22 +246,64 @@ const Dashboard = () => {
                   </span>
                 </div>
 
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                   {eligibleRequests.map((req: any) => (
-                    <div key={req.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col group hover:border-indigo-200 transition-all">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h4 className="text-sm font-black text-slate-800 uppercase">{req.hospitalName}</h4>
-                          <p className="text-[9px] font-bold text-slate-400 uppercase">{req.treatmentType}</p>
+                    <div key={req.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col group hover:border-indigo-200 transition-all gap-3">
+                      {/* Hospital Header */}
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <h4 className="text-sm font-black text-slate-800 uppercase leading-tight">{req.hospitalName}</h4>
+                          {req.hospitalAddress && (
+                            <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">{req.hospitalAddress}</p>
+                          )}
                         </div>
-                        <span className="bg-indigo-600 text-white px-2 py-0.5 rounded font-black text-[10px]">{req.bloodGroup}</span>
+                        <span className="flex-shrink-0 bg-indigo-600 text-white px-2 py-0.5 rounded font-black text-[10px]">{req.bloodGroup}</span>
                       </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-slate-200" />
+
+                      {/* Patient Details Grid */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                        {(req.patientName) && (
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Patient</p>
+                            <p className="text-[10px] font-black text-slate-700 uppercase">{req.patientName}</p>
+                          </div>
+                        )}
+                        {(req.patientAge) && (
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Age</p>
+                            <p className="text-[10px] font-black text-slate-700">{req.patientAge} yrs</p>
+                          </div>
+                        )}
+                        {(req.treatmentType || req.purpose) && (
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Purpose</p>
+                            <p className="text-[10px] font-black text-slate-700 uppercase">{req.purpose || req.treatmentType}</p>
+                          </div>
+                        )}
+                        {(req.quantity) && (
+                          <div>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Units Needed</p>
+                            <p className="text-[10px] font-black text-red-600">{req.quantity} unit{req.quantity > 1 ? 's' : ''}</p>
+                          </div>
+                        )}
+                        {(req.contactNumber) && (
+                          <div className="col-span-2">
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Contact</p>
+                            <p className="text-[10px] font-black text-slate-700">{req.contactNumber}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Button */}
                       <button
                         onClick={() => handleAcceptRequest(req)}
                         disabled={acceptingId === req.id}
                         className="w-full py-2.5 bg-slate-900 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all"
                       >
-                        {acceptingId === req.id ? 'Securing...' : 'Accept MISSION'}
+                        {acceptingId === req.id ? 'Securing...' : 'Accept Mission'}
                       </button>
                     </div>
                   ))}
@@ -271,6 +335,10 @@ const Dashboard = () => {
               <div className="border-l-2 border-indigo-500/30 pl-4">
                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">Department</p>
                 <p className="text-sm font-black text-white uppercase">{studentDetails.department || 'N/A'}</p>
+              </div>
+              <div className="border-l-2 border-indigo-500/30 pl-4">
+                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">Academic Year</p>
+                <p className="text-sm font-black text-white uppercase">{studentDetails.year || 'N/A'}</p>
               </div>
               <div className="border-l-2 border-indigo-500/30 pl-4">
                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">Institution</p>

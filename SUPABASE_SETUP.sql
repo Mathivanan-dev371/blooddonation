@@ -5,6 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 DROP FUNCTION IF EXISTS public.handle_new_user();
 
+DROP TABLE IF EXISTS public.fcm_tokens;
 DROP TABLE IF EXISTS public.donation_attempts;
 DROP TABLE IF EXISTS public.hospital_requests;
 DROP TABLE IF EXISTS public.student_donors;
@@ -199,3 +200,43 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Create FCM Tokens table linked to student_details
+CREATE TABLE IF NOT EXISTS public.fcm_tokens (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.student_details(user_id) ON DELETE CASCADE UNIQUE,
+    fcm_token TEXT NOT NULL,
+    device_type TEXT, -- e.g., 'android', 'ios', 'web'
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add indexes for fcm_tokens
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_user_id ON public.fcm_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_token ON public.fcm_tokens(fcm_token);
+
+-- Enable RLS for fcm_tokens
+ALTER TABLE public.fcm_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Policies for fcm_tokens
+DROP POLICY IF EXISTS "Users can insert their own fcm tokens" ON public.fcm_tokens;
+CREATE POLICY "Users can insert their own fcm tokens"
+ON public.fcm_tokens FOR INSERT
+WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can view their own fcm tokens" ON public.fcm_tokens;
+CREATE POLICY "Users can view their own fcm tokens"
+ON public.fcm_tokens FOR SELECT
+USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update their own fcm tokens" ON public.fcm_tokens;
+CREATE POLICY "Users can update their own fcm tokens"
+ON public.fcm_tokens FOR UPDATE
+USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete their own fcm tokens" ON public.fcm_tokens;
+CREATE POLICY "Users can delete their own fcm tokens"
+ON public.fcm_tokens FOR DELETE
+USING (user_id = auth.uid());

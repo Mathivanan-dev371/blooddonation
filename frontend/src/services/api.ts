@@ -25,7 +25,8 @@ const mapStudentDetails = (details: any) => {
     phoneNumber: d.phone_number,
     bloodGroup: d.blood_group,
     collegeName: d.college_name,
-    //year_semester is already used as year_semester in dashboard
+    year: d.year,
+    year_semester: d.year_semester || d.year,
   };
 };
 
@@ -428,7 +429,18 @@ export const hospitalService = {
       })
       .select()
       .single();
+
     if (error) handleError(error);
+
+    // Notify Admins about the new hospital request
+    if (result) {
+      notificationService.notifyAdmins(
+        'New Hospital Request',
+        `${data.hospitalName} requested ${data.quantity} units of ${data.bloodGroup} blood.`,
+        { requestId: result.id, source: 'hospital_requests' }
+      ).catch(err => console.error('Failed to notify admins:', err));
+    }
+
     return result;
   },
   mapHospitalRequest: (req: any) => {
@@ -446,6 +458,7 @@ export const hospitalService = {
       contactNumber: req.phone_number,
       createdAt: req.created_at,
       updatedAt: req.updated_at,
+      notificationSent: req.notification_sent,
     };
   },
   updateStatus: async (id: string, status: string) => {
@@ -678,7 +691,8 @@ export const requirementsService = {
       patientName: item.patient_name,
       treatmentType: item.treatment_type,
       bloodGroup: item.blood_group,
-      createdAt: item.created_at
+      createdAt: item.created_at,
+      notificationSent: item.notification_sent
     }));
 
     const mappedHosps = (hosps.data || []).map((req: any) => hospitalService.mapHospitalRequest(req));
@@ -750,6 +764,150 @@ export const requirementsService = {
       .single();
     if (error) handleError(error);
     return data;
+  }
+};
+
+export const notificationService = {
+  saveToken: async (token: string, deviceType: string = 'web') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Authentication required to save notification token');
+
+    const { data, error } = await supabase
+      .from('fcm_tokens')
+      .upsert({
+        user_id: user.id,
+        fcm_token: token,
+        device_type: deviceType,
+        last_used_at: new Date().toISOString(),
+        is_active: true
+      }, { onConflict: 'user_id' })
+      .select()
+      .single();
+
+    if (error) handleError(error);
+    return data;
+  },
+  sendRequestNotification: async (request: any) => {
+    try {
+      // 1. Fetch eligible donors (matching blood group and available)
+      const { data: donors, error: donorError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          student_details!inner (
+            blood_group
+          )
+        `)
+        .eq('role', 'STUDENT')
+        .eq('is_available', true)
+        .eq('student_details.blood_group', request.bloodGroup);
+
+      if (donorError) throw donorError;
+      if (!donors || donors.length === 0) return { success: true, count: 0 };
+
+      const donorIds = donors.map(d => d.id);
+
+      // 2. Fetch their FCM tokens
+      const { data: tokens, error: tokenError } = await supabase
+        .from('fcm_tokens')
+        .select('fcm_token')
+        .in('user_id', donorIds)
+        .eq('is_active', true);
+
+      if (tokenError) throw tokenError;
+      if (!tokens || tokens.length === 0) return { success: true, count: 0 };
+
+      const fcmTokens = tokens.map(t => t.fcm_token);
+
+      // 3. Call Supabase Edge Function to send notifications
+      // Note: This expects a 'send-fcm' edge function to be deployed
+      const { error: funcError } = await supabase.functions.invoke('send-fcm', {
+        body: {
+          tokens: fcmTokens,
+          title: `🩸 Urgent: ${request.bloodGroup} Required`,
+          body: `Patient: ${request.patientName || 'Emergency'}\nUnits Needed: ${request.quantity}\nHospital: ${request.hospitalName}\nType: ${request.purpose || request.treatmentType || 'Regular'}`,
+          data: {
+            requestId: request.id,
+            source: request._source,
+            bloodGroup: request.bloodGroup,
+            type: 'BLOOD_REQUEST'
+          }
+        }
+      });
+
+      if (funcError) {
+        console.warn('Edge function error (might not be deployed):', funcError);
+      }
+
+      // 4. Mark as notified in the database - once
+      try {
+        if (request._source === 'hospital_requests') {
+          await supabase
+            .from('hospital_requests')
+            .update({ notification_sent: true })
+            .eq('id', request.id);
+        } else {
+          await supabase
+            .from('blood_requirements')
+            .update({ notification_sent: true })
+            .eq('id', request.id);
+        }
+      } catch (dbErr) {
+        console.error('Failed to update notification_sent status:', dbErr);
+      }
+
+      return { success: true, count: tokens.length };
+    } catch (error) {
+      console.error('Error in sendRequestNotification:', error);
+      handleError(error);
+    }
+  },
+  notifyAdmins: async (title: string, body: string, data?: any) => {
+    try {
+      // 1. Get all admin user IDs
+      const { data: admins, error: adminError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'ADMIN');
+
+      if (adminError) throw adminError;
+      if (!admins || admins.length === 0) return { success: true, count: 0 };
+
+      const adminIds = admins.map(a => a.id);
+
+      // 2. Get tokens for these admins
+      const { data: tokens, error: tokenError } = await supabase
+        .from('fcm_tokens')
+        .select('fcm_token')
+        .in('user_id', adminIds)
+        .eq('is_active', true);
+
+      if (tokenError) throw tokenError;
+      if (!tokens || tokens.length === 0) return { success: true, count: 0 };
+
+      const fcmTokens = tokens.map(t => t.fcm_token);
+
+      // 3. Send notification
+      const { error: funcError } = await supabase.functions.invoke('send-fcm', {
+        body: {
+          tokens: fcmTokens,
+          title: `🛡️ Admin Alert: ${title}`,
+          body: body,
+          data: {
+            ...data,
+            type: 'ADMIN_ALERT'
+          }
+        }
+      });
+
+      if (funcError) console.warn('Admin notification edge function error:', funcError);
+
+      return { success: true, count: fcmTokens.length };
+    } catch (error) {
+      console.error('Error in notifyAdmins:', error);
+      // We don't want to block the main flow if admin notification fails
+      return { success: false, error };
+    }
   }
 };
 

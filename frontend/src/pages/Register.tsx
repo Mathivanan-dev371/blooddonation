@@ -10,6 +10,7 @@ interface RegisteredStudent {
   phoneNumber: string;
   bloodGroup: string;
   collegeName: string;
+  year: string;
   email: string;
 }
 
@@ -21,6 +22,7 @@ const Register = () => {
     phoneNumber: '',
     bloodGroup: '',
     collegeName: '',
+    year: '',
     email: '',
   });
   const [error, setError] = useState('');
@@ -106,6 +108,7 @@ const Register = () => {
             blood_group: formData.bloodGroup,
             department: formData.department,
             college_name: formData.collegeName,
+            year: formData.year,
           }
         }
       });
@@ -136,6 +139,7 @@ const Register = () => {
           email: formData.email,
           username: formData.email, // Use email as username (guaranteed unique)
           role: 'STUDENT',
+          year: formData.year,
           is_active: true,
           is_available: true
         });
@@ -155,7 +159,8 @@ const Register = () => {
           phone_number: formData.phoneNumber,
           department: formData.department,
           blood_group: formData.bloodGroup,
-          year_semester: formData.collegeName,
+          year: formData.year,
+          year_semester: formData.year,
           college_name: formData.collegeName,
           status: 'Active'
         });
@@ -170,6 +175,7 @@ const Register = () => {
         phoneNumber: formData.phoneNumber,
         bloodGroup: formData.bloodGroup,
         collegeName: formData.collegeName,
+        year: formData.year,
         email: formData.email,
       });
       setIsSuccess(true);
@@ -223,6 +229,10 @@ const Register = () => {
                 <div className="flex justify-between py-4 border-b border-purple-50">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Blood Signature</span>
                   <span className="px-3 py-1 rounded-xl text-xs font-black bg-red-50 text-red-600 border border-red-100">{registeredStudent.bloodGroup}</span>
+                </div>
+                <div className="flex justify-between py-4 border-b border-purple-50">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">Academic Year</span>
+                  <span className="text-sm font-black text-slate-800 uppercase leading-none">{registeredStudent.year}</span>
                 </div>
                 <div className="flex justify-between py-4">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none pt-1">College Name</span>
@@ -307,6 +317,16 @@ const Register = () => {
                   <select name="collegeName" required className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-black text-sm text-slate-800 cursor-pointer appearance-none" value={formData.collegeName} onChange={handleChange}>
                     <option value="">Host College</option>
                     {colleges.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Academic Year</label>
+                  <select name="year" required className="w-full bg-purple-50/30 border border-purple-100 p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-black text-sm text-slate-800 cursor-pointer appearance-none" value={formData.year} onChange={handleChange}>
+                    <option value="">Select Year</option>
+                    <option value="I Year">I Year</option>
+                    <option value="II Year">II Year</option>
+                    <option value="III Year">III Year</option>
+                    <option value="IV Year">IV Year</option>
                   </select>
                 </div>
                 <div className="md:col-span-2 space-y-2">
