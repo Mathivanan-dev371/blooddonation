@@ -54,101 +54,114 @@ export const authService = {
   },
   login: async (usernameOrEmail: string, password: string) => {
     const identifier = usernameOrEmail.trim();
-    let email = identifier;
 
+    // 1. Priority Check: Manual Admin Accounts
+    const { data: manualAdmin, error: manualAdminError } = await supabase
+      .from('admin_accounts')
+      .select('*')
+      .eq('username', identifier)
+      .eq('password', password)
+      .maybeSingle();
+
+    if (manualAdmin && !manualAdminError) {
+      return {
+        user: {
+          id: manualAdmin.id,
+          username: manualAdmin.username,
+          role: 'ADMIN',
+          trustScore: 100,
+          isActive: true
+        },
+        token: 'manual-admin-token-' + manualAdmin.id
+      };
+    }
+
+    // 2. Priority Check: Manual Hospital Accounts
+    const { data: manualHosp, error: manualHospError } = await supabase
+      .from('hospital_accounts')
+      .select('*')
+      .eq('email', identifier) // Often used as identifier
+      .eq('password', password)
+      .maybeSingle();
+
+    if (manualHosp && !manualHospError) {
+      return {
+        user: {
+          id: manualHosp.id,
+          email: manualHosp.email,
+          username: manualHosp.hospital_name,
+          role: 'HOSPITAL',
+          hospital_name: manualHosp.hospital_name,
+          location: manualHosp.location,
+          trustScore: 100,
+          isActive: true
+        },
+        token: 'manual-hospital-token-' + manualHosp.id
+      };
+    }
+
+    // 3. Standard Auth: Resolve Username/Admission Number to Email
+    let email = identifier;
     if (!identifier.includes('@')) {
       try {
-        const { data: studentMatch, error: studentError } = await supabase
+        const { data: studentMatch } = await supabase
           .from('student_details')
           .select('user_id')
           .ilike('admission_number', identifier)
           .maybeSingle();
 
-        if (studentMatch && !studentError) {
+        if (studentMatch) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('email')
             .eq('id', studentMatch.user_id)
             .maybeSingle();
-
-          if (profile?.email) {
-            email = profile.email;
-          }
+          if (profile?.email) email = profile.email;
         } else {
-          const { data: profile, error: profileLookupError } = await supabase
+          const { data: profile } = await supabase
             .from('profiles')
             .select('email')
             .ilike('username', identifier)
             .maybeSingle();
-
-          if (profile && profile.email && !profileLookupError) {
-            email = profile.email;
-          }
+          if (profile?.email) email = profile.email;
         }
       } catch (e) {
         console.error('Identifier resolution error:', e);
       }
     }
 
+    // If still no valid email and it's not a manual record, then it's a student login error
     if (!identifier.includes('@') && email === identifier) {
       throw new Error('No account found with this Admission Number or Username.');
     }
 
-    console.log(`Login Attempt: Identifier="${identifier}", ResolvedEmail="${email}"`);
-
+    // 4. Supabase Auth Attempt
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (authError) {
-      console.error('Supabase Login Error:', authError);
       if (authError.message.includes('Email not confirmed')) {
-        throw new Error('Identity verification pending. Please confirm your email address or contact the administrator to disable email confirmation.');
-      }
-
-      const { data: manualAcc, error: manualError } = await supabase
-        .from('hospital_accounts')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .maybeSingle();
-
-      if (manualAcc && !manualError) {
-        return {
-          user: {
-            id: manualAcc.id,
-            email: manualAcc.email,
-            username: manualAcc.hospital_name,
-            role: 'HOSPITAL',
-            hospital_name: manualAcc.hospital_name,
-            location: manualAcc.location,
-            trustScore: 100,
-            isActive: true
-          },
-          token: 'manual-hospital-token-' + manualAcc.id
-        };
+        throw new Error('Identity verification pending. Please confirm your email address.');
       }
       handleError(authError);
     }
 
     if (!authData.user) throw new Error('Login failed: No user data returned');
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('*, student_details(*)')
       .eq('id', authData.user.id)
       .maybeSingle();
 
-    if (profileError) console.error('Error fetching profile during login:', profileError);
-
     if (!profile) {
-      throw new Error('Your account is no longer active. Please contact administration for support.');
+      throw new Error('Your account is no longer active.');
     }
 
-    const mappedProfile = mapProfile(profile);
     return {
-      user: { ...authData.user, ...mappedProfile },
+      user: { ...authData.user, ...mapProfile(profile) },
       token: authData.session?.access_token || 'supabase-token',
     };
   },
@@ -790,6 +803,8 @@ export const notificationService = {
   sendRequestNotification: async (request: any) => {
     try {
       // 1. Fetch eligible donors (matching blood group and available)
+      const bloodGroupNormalized = request.bloodGroup.trim();
+
       const { data: donors, error: donorError } = await supabase
         .from('profiles')
         .select(`
@@ -800,7 +815,7 @@ export const notificationService = {
         `)
         .eq('role', 'STUDENT')
         .eq('is_available', true)
-        .eq('student_details.blood_group', request.bloodGroup);
+        .ilike('student_details.blood_group', bloodGroupNormalized);
 
       if (donorError) throw donorError;
       if (!donors || donors.length === 0) return { success: true, count: 0 };

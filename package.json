@@ -14,6 +14,6 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "node": "^25.6.0"
+    "node": "^25.8.0"
   }
 }
