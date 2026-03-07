@@ -354,6 +354,10 @@ const Dashboard = () => {
                 <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">Status</p>
                 <p className="text-[10px] font-black text-amber-400 uppercase tracking-tighter">Verified Donor</p>
               </div>
+              <div className="border-l-2 border-fuchsia-500/30 pl-4">
+                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest mb-1">Trust Score</p>
+                <p className="text-2xl font-black text-fuchsia-400">{profile.trustScore || 0} <span className="text-[10px] tracking-widest uppercase text-fuchsia-400/50">Pts</span></p>
+              </div>
             </div>
           </div>
         </div>
@@ -362,36 +366,42 @@ const Dashboard = () => {
         <div className="bg-white rounded-[2.5rem] shadow-xl shadow-purple-200/20 border border-purple-100 overflow-hidden">
           <div className="px-8 py-6 border-b border-purple-50 flex items-center justify-between bg-purple-50/30">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Contribution Vault</h3>
-            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Live Log</span>
+            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">Achievement Log</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="text-left border-b border-purple-50">
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hospital</th>
                   <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reference</th>
+                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Points</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-purple-50">
                 {donations.length > 0 ? donations.slice(0, 5).map((donation) => (
                   <tr key={donation.id} className="hover:bg-purple-50/30 transition-colors">
-                    <td className="px-8 py-5 text-sm font-black text-slate-600 uppercase">
+                    <td className="px-8 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-700 uppercase">{donation.hospitalName || donation.reason || 'Sona College'}</span>
+                        <span className={`text-[9px] font-bold tracking-widest uppercase ${donation.status === 'SUCCESS' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {donation.status === 'SUCCESS' ? '• Verified Donation' : '• Attempt Failed'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-5 text-xs font-black text-slate-500">
                       {formatDate(donation.date)}
                     </td>
                     <td className="px-8 py-5">
-                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest uppercase border ${donation.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : donation.status === 'FAILURE' ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                        {donation.status}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 text-xs font-bold text-slate-400 italic">
-                      {donation.reason || 'Verification record created.'}
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span className="text-sm font-black text-amber-600">+{donation.points || (donation.status === 'SUCCESS' ? 5 : 0)} PTS</span>
+                      </div>
                     </td>
                   </tr>
                 )) : (
                   <tr>
                     <td colSpan={3} className="px-8 py-12 text-center text-slate-400 font-bold italic">
-                      No contribution records found.
+                      No contribution records found yet. Donate to rank up!
                     </td>
                   </tr>
                 )}

@@ -2,7 +2,24 @@ import { supabase } from './supabase';
 
 // Helper to standardise errors
 const handleError = (error: any) => {
-  const message = error.message || 'An error occurred';
+  let message = error.message || 'An error occurred';
+
+  // Handle Postgres Unique Constraint Errors
+  const lowerMsg = message.toLowerCase();
+  if (lowerMsg.includes('duplicate key value violates unique constraint')) {
+    if (lowerMsg.includes('admission_number') || lowerMsg.includes('registration_number')) {
+      message = 'An account with this Registration/Admission Number already exists. Please login.';
+    } else if (lowerMsg.includes('email')) {
+      message = 'An account with this Email already exists. Please login.';
+    } else if (lowerMsg.includes('username')) {
+      message = 'This Username is already taken. Please choose another.';
+    } else if (lowerMsg.includes('phone_number') || lowerMsg.includes('phone_number_key')) {
+      message = 'An account with this Phone Number already exists.';
+    } else {
+      message = 'An account with this information already exists. Please login instead.';
+    }
+  }
+
   const err = new Error(message);
   // Attach the old structure for any code still expecting it
   (err as any).response = {
@@ -377,38 +394,56 @@ export const donationService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('No user found');
 
-    const { data, error } = await supabase
-      .from('donation_attempts')
-      .select('*')
-      .eq('user_id', user.id);
-    if (error) handleError(error);
-    return data;
+    // Fetch from hospital_response_tracking
+    const { data: trackingData, error: trackingError } = await supabase
+      .from('hospital_response_tracking')
+      .select('*, hospital_requests(*)')
+      .eq('student_id', user.id);
+
+    // Fetch from requirement_responses
+    const { data: reqData, error: reqError } = await supabase
+      .from('requirement_responses')
+      .select('*, blood_requirements(*)')
+      .eq('student_id', user.id);
+
+    if (trackingError) console.error(trackingError);
+    if (reqError) console.error(reqError);
+
+    const donations: any[] = [];
+
+    (trackingData || []).forEach((t: any) => {
+      const req = t.hospital_requests || {};
+      const isCompleted = req.status === 'COMPLETED' || t.arrival_status === 'Arrived';
+      donations.push({
+        id: `hosp-${t.id}`,
+        date: t.created_at,
+        status: isCompleted ? 'SUCCESS' : 'PENDING',
+        hospitalName: req.hospital_name || 'Hospital Request',
+        reason: req.purpose || req.treatment_type || 'Requested Donation',
+        points: isCompleted ? 5 : 0
+      });
+    });
+
+    (reqData || []).forEach((r: any) => {
+      const req = r.blood_requirements || {};
+      const isCompleted = req.status === 'COMPLETED' || req.status === 'Arranged' || r.arrival_status === 'Arrived';
+      donations.push({
+        id: `req-${r.id}`,
+        date: r.created_at,
+        status: isCompleted ? 'SUCCESS' : 'PENDING',
+        hospitalName: req.hospital_name || 'Emergency Requirement',
+        reason: req.treatment_type || 'Emergency Request',
+        points: isCompleted ? 5 : 0
+      });
+    });
+
+    return donations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
-  getAllDonations: async (filters?: any) => {
-    let query = supabase.from('donation_attempts').select('*, user:profiles(*, student_details(*))');
-    if (filters?.status) query = query.eq('status', filters.status);
-    const { data, error } = await query;
-    if (error) handleError(error);
-    return data;
-  },
-  updateDonationStatus: async (id: string, status: string, reason?: string) => {
-    const { data, error } = await supabase
-      .from('donation_attempts')
-      .update({ status, reason })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) handleError(error);
-    return data;
+  getAllDonations: async () => {
+    return [];
   },
   getStats: async () => {
-    // This is hard to do with simple client queries efficiently.
-    // best to do multiple count queries or RPC
-    const { count: total } = await supabase.from('donation_attempts').select('*', { count: 'exact', head: true });
-    const { count: success } = await supabase.from('donation_attempts').select('*', { count: 'exact', head: true }).eq('status', 'SUCCESS');
-    const { count: pending } = await supabase.from('donation_attempts').select('*', { count: 'exact', head: true }).eq('status', 'PENDING');
-
-    return { total, success, pending };
+    return { total: 0, success: 0, pending: 0 };
   },
 };
 

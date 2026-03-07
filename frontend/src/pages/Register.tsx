@@ -43,12 +43,12 @@ const Register = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const checkDuplicates = async () => {
+  const checkDuplicates = async (normalizedAdmissionNumber: string) => {
     // Check for duplicate email in profiles
     const { data: emailData } = await supabase
       .from('profiles')
       .select('email')
-      .eq('email', formData.email)
+      .eq('email', formData.email.trim())
       .maybeSingle();
 
     if (emailData) {
@@ -59,7 +59,7 @@ const Register = () => {
     const { data: admissionData } = await supabase
       .from('student_details')
       .select('admission_number')
-      .eq('admission_number', formData.admissionNumber)
+      .eq('admission_number', normalizedAdmissionNumber)
       .maybeSingle();
 
     if (admissionData) {
@@ -82,17 +82,17 @@ const Register = () => {
     setLoading(true);
 
     try {
+      // Use admission number as password for simplicity (normalized to uppercase)
+      const admissionUpper = formData.admissionNumber.trim().toUpperCase();
+      const password = admissionUpper;
+
       // Check for duplicates first
-      const duplicateError = await checkDuplicates();
+      const duplicateError = await checkDuplicates(admissionUpper);
       if (duplicateError) {
         setError(duplicateError);
         setLoading(false);
         return;
       }
-
-      // Use admission number as password for simplicity (normalized to uppercase)
-      const admissionUpper = formData.admissionNumber.trim().toUpperCase();
-      const password = admissionUpper;
 
       console.log('Attempting sign up with:', formData.email);
 

@@ -360,10 +360,10 @@ const AdminPanel = () => {
                         onClick={() => handleNotify(req)}
                         disabled={sendingNotify === req.id}
                         className={`flex items-center justify-center py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${req.notificationSent
-                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100'
-                            : (req.status === 'Approved' || req.status === 'ASSIGNED')
-                              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
-                              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-100'
+                          : (req.status === 'Approved' || req.status === 'ASSIGNED')
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                            : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                           } ${sendingNotify === req.id ? 'opacity-50 cursor-wait' : ''}`}
                       >
                         {sendingNotify === req.id
@@ -404,7 +404,7 @@ const AdminPanel = () => {
                 <div className="flex items-center space-x-4">
                   <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">Donor Registry</h2>
                   <span className="px-3 py-1 bg-white border border-purple-100 rounded-lg text-[10px] font-bold text-indigo-600 shadow-sm">
-                    {users.length} Registered
+                    {users.filter(u => u.studentDetails).length} Registered
                   </span>
                 </div>
 
@@ -453,7 +453,9 @@ const AdminPanel = () => {
                   <tbody className="divide-y divide-purple-50">
                     {[...users]
                       .filter(u => {
+                        if (!u.studentDetails) return false;
                         const q = searchQuery.toLowerCase();
+                        if (!q) return true;
                         return (
                           u.studentDetails?.name?.toLowerCase().includes(q) ||
                           u.studentDetails?.admissionNumber?.toLowerCase().includes(q) ||
@@ -509,11 +511,12 @@ const AdminPanel = () => {
                 </table>
               </div>
 
-              {/* Mobile Registry Grid */}
               <div className="lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[...users]
                   .filter(u => {
+                    if (!u.studentDetails) return false;
                     const q = searchQuery.toLowerCase();
+                    if (!q) return true;
                     return (
                       u.studentDetails?.name?.toLowerCase().includes(q) ||
                       u.studentDetails?.admissionNumber?.toLowerCase().includes(q) ||
