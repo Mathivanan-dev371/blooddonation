@@ -14,6 +14,13 @@ const AdminPanel = () => {
   const [sortOrder, setSortOrder] = useState<'none' | 'highest' | 'lowest'>('none');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Broadcast All Modal State
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastTitle, setBroadcastTitle] = useState('');
+  const [broadcastBody, setBroadcastBody] = useState('');
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState<string | null>(null);
+
   // Hospital Registry States
   const [registeredHospitals, setRegisteredHospitals] = useState<any[]>([]);
   const [registryForm, setRegistryForm] = useState({
@@ -210,6 +217,30 @@ const AdminPanel = () => {
     navigate('/', { replace: true });
   };
 
+  const handleBroadcastAll = async () => {
+    if (!broadcastTitle.trim() || !broadcastBody.trim()) {
+      alert('Please enter both a title and message.');
+      return;
+    }
+    setSendingBroadcast(true);
+    setBroadcastResult(null);
+    try {
+      const result = await notificationService.broadcastToAll(broadcastTitle.trim(), broadcastBody.trim());
+      if (result.success) {
+        setBroadcastResult(`✅ Sent to ${result.count} user${result.count === 1 ? '' : 's'}!`);
+        setBroadcastTitle('');
+        setBroadcastBody('');
+      } else {
+        setBroadcastResult('❌ Failed to send. Check console for details.');
+      }
+    } catch (err: any) {
+      console.error('Broadcast error:', err);
+      setBroadcastResult('❌ Error: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSendingBroadcast(false);
+    }
+  };
+
   const getTimeSinceActive = (lastActive: string) => {
     if (!lastActive) return 'Just now';
     const diff = Date.now() - new Date(lastActive).getTime();
@@ -239,6 +270,80 @@ const AdminPanel = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-12">
+
+      {/* ── Broadcast Modal ── */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 space-y-6 border border-purple-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">📢 Notify All Users</h3>
+                <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Sends a push notification to every app user</p>
+              </div>
+              <button
+                onClick={() => { setShowBroadcastModal(false); setBroadcastResult(null); }}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Notification Title</label>
+                <input
+                  type="text"
+                  value={broadcastTitle}
+                  onChange={(e) => setBroadcastTitle(e.target.value)}
+                  placeholder="e.g. Urgent Blood Drive"
+                  className="w-full px-4 py-3 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-bold text-sm transition-all"
+                  maxLength={100}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Message Body</label>
+                <textarea
+                  value={broadcastBody}
+                  onChange={(e) => setBroadcastBody(e.target.value)}
+                  placeholder="e.g. We need O+ blood donors to report to campus health center immediately."
+                  rows={4}
+                  className="w-full px-4 py-3 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-bold text-sm transition-all resize-none"
+                  maxLength={300}
+                />
+                <p className="text-right text-[10px] text-slate-300 font-bold mt-1">{broadcastBody.length}/300</p>
+              </div>
+            </div>
+
+            {broadcastResult && (
+              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${
+                broadcastResult.startsWith('✅')
+                  ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                  : 'bg-rose-50 border-rose-100 text-rose-600'
+              }`}>
+                {broadcastResult}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowBroadcastModal(false); setBroadcastResult(null); }}
+                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBroadcastAll}
+                disabled={sendingBroadcast || !broadcastTitle.trim() || !broadcastBody.trim()}
+                className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all"
+              >
+                {sendingBroadcast ? '⏳ Sending...' : '🚀 Send to All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Floating Back Button - To match Login portals */}
       <button
         onClick={() => navigate('/', { replace: true })}
@@ -282,6 +387,14 @@ const AdminPanel = () => {
                   History
                 </button>
               </nav>
+              <button
+                onClick={() => { setShowBroadcastModal(true); setBroadcastResult(null); }}
+                className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl border border-indigo-100 transition-all font-black text-[10px] uppercase tracking-wider flex items-center space-x-1.5"
+                title="Send notification to all users"
+              >
+                <span>📢</span>
+                <span>Notify All</span>
+              </button>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl border border-red-100 transition-all font-black text-[10px] uppercase tracking-wider"

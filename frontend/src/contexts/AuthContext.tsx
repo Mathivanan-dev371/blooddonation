@@ -67,6 +67,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('Received FCM Token from RN:', data.token);
           setRnFcmToken(data.token);
           localStorage.setItem('rn_fcm_token', data.token);
+
+          // Proactive broadcast as requested: Notify ALL users when token is received/requested
+          if (user) {
+            notificationService.broadcastToAll(
+              "🚀 Device Sync Complete",
+              `${user.displayName || user.username} has updated their notification connection.`,
+              { userId: user.id, event: 'DEVICE_SYNC' }
+            ).catch(err => console.error('Auto-broadcast failed:', err));
+          }
         }
       } catch (e) {
         // Not JSON or other message
@@ -107,6 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (user && !loading) {
       syncFcmToken();
+
+      // Trigger the request for the token from the Native WebView if available
+      if ((window as any).ReactNativeWebView) {
+        console.log('[AuthContext] Requesting FCM token from native host...');
+        (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: 'GET_FCM_TOKEN' }));
+      }
     }
   }, [user, rnFcmToken, loading]);
 
