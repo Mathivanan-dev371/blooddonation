@@ -837,78 +837,75 @@ export const notificationService = {
   },
   sendRequestNotification: async (request: any) => {
     try {
-      // 1. Fetch eligible donors (matching blood group and available)
-      const bloodGroupNormalized = request.bloodGroup.trim();
+      console.log('[Notification] Starting notification process for:', request.bloodGroup);
 
-      const { data: donors, error: donorError } = await supabase
+      // 1. Fetch matching donor IDs
+      const bloodGroupNormalized = request.bloodGroup?.trim();
+      const { data: donors, error: donorErr } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          student_details!inner (
-            blood_group
-          )
-        `)
+        .select('id, student_details!inner(blood_group)')
         .eq('role', 'STUDENT')
         .eq('is_available', true)
         .ilike('student_details.blood_group', bloodGroupNormalized);
 
-      if (donorError) throw donorError;
-      if (!donors || donors.length === 0) return { success: true, count: 0 };
+      if (donorErr) console.error('[Notification] Profile fetch error:', donorErr);
 
-      const donorIds = donors.map(d => d.id);
+      const donorIds = donors?.map((d: any) => d.id) || [];
+      console.log(`[Notification] Found ${donorIds.length} available donors for ${bloodGroupNormalized}`);
 
-      // 2. Fetch their FCM tokens
-      const { data: tokens, error: tokenError } = await supabase
-        .from('fcm_tokens')
-        .select('fcm_token')
-        .in('user_id', donorIds)
-        .eq('is_active', true);
+      // 2. Use SECURITY DEFINER RPC to bypass RLS and fetch tokens
+      //    If matching donors found, notify them. Otherwise notify ALL active tokens.
+      const rpcParams = donorIds.length > 0 ? { p_user_ids: donorIds } : { p_user_ids: null };
+      const { data: tokens, error: tokenError } = await supabase.rpc('get_tokens_for_notification', rpcParams);
 
-      if (tokenError) throw tokenError;
-      if (!tokens || tokens.length === 0) return { success: true, count: 0 };
+      if (tokenError) {
+        console.error('[Notification] Token fetch error (RPC):', tokenError);
+        throw tokenError;
+      }
 
-      const fcmTokens = tokens.map(t => t.fcm_token);
+      if (!tokens || tokens.length === 0) {
+        console.warn('[Notification] No active tokens found.');
+        return { success: true, count: 0 };
+      }
 
-      // 3. Call Supabase Edge Function to send notifications
-      // Note: This expects a 'send-fcm' edge function to be deployed
-      const { error: funcError } = await supabase.functions.invoke('send-fcm', {
-        body: {
-          tokens: fcmTokens,
-          title: `🩸 Urgent: ${request.bloodGroup} Required`,
-          body: `Patient: ${request.patientName || 'Emergency'}\nUnits Needed: ${request.quantity}\nHospital: ${request.hospitalName}\nType: ${request.purpose || request.treatmentType || 'Regular'}`,
-          data: {
-            requestId: request.id,
-            source: request._source,
-            bloodGroup: request.bloodGroup,
-            type: 'BLOOD_REQUEST'
-          }
+      const fcmTokens = tokens.map((t: any) => t.fcm_token);
+      console.log(`[Notification] Sending to ${fcmTokens.length} tokens via Edge Function...`);
+
+      // 3. Send directly to Expo Push API
+      const messages = fcmTokens.map((token: string) => ({
+        to: token,
+        sound: 'default',
+        title: `🩸 Urgent: ${request.bloodGroup} Required`,
+        body: `Hospital: ${request.hospitalName}\nPatient: ${request.patientName}\nUnits: ${request.quantity}`,
+        data: {
+          requestId: request.id,
+          source: request._source,
+          type: 'BLOOD_REQUEST'
         }
+      }));
+
+      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify(messages)
       });
 
-      if (funcError) {
-        console.warn('Edge function error (might not be deployed):', funcError);
+      if (!res.ok) {
+        throw new Error(`Expo Push error: ${res.statusText}`);
       }
 
-      // 4. Mark as notified in the database - once
-      try {
-        if (request._source === 'hospital_requests') {
-          await supabase
-            .from('hospital_requests')
-            .update({ notification_sent: true })
-            .eq('id', request.id);
-        } else {
-          await supabase
-            .from('blood_requirements')
-            .update({ notification_sent: true })
-            .eq('id', request.id);
-        }
-      } catch (dbErr) {
-        console.error('Failed to update notification_sent status:', dbErr);
-      }
+      // 4. Persistence update
+      const table = request._source === 'hospital_requests' ? 'hospital_requests' : 'blood_requirements';
+      await supabase.from(table).update({ notification_sent: true }).eq('id', request.id);
 
+      console.log('[Notification] Success!');
       return { success: true, count: tokens.length };
     } catch (error) {
-      console.error('Error in sendRequestNotification:', error);
+      console.error('[Notification] Fatal error:', error);
       handleError(error);
     }
   },
@@ -923,39 +920,101 @@ export const notificationService = {
       if (adminError) throw adminError;
       if (!admins || admins.length === 0) return { success: true, count: 0 };
 
-      const adminIds = admins.map(a => a.id);
+      const adminIds = admins.map((a: any) => a.id);
 
-      // 2. Get tokens for these admins
-      const { data: tokens, error: tokenError } = await supabase
-        .from('fcm_tokens')
-        .select('fcm_token')
-        .in('user_id', adminIds)
-        .eq('is_active', true);
+      // 2. Use SECURITY DEFINER RPC to bypass RLS and get tokens for admins
+      const { data: tokens, error: tokenError } = await supabase.rpc(
+        'get_tokens_for_notification',
+        { p_user_ids: adminIds }
+      );
 
       if (tokenError) throw tokenError;
       if (!tokens || tokens.length === 0) return { success: true, count: 0 };
 
-      const fcmTokens = tokens.map(t => t.fcm_token);
+      const fcmTokens = tokens.map((t: any) => t.fcm_token);
 
-      // 3. Send notification
-      const { error: funcError } = await supabase.functions.invoke('send-fcm', {
-        body: {
-          tokens: fcmTokens,
-          title: `🛡️ Admin Alert: ${title}`,
-          body: body,
-          data: {
-            ...data,
-            type: 'ADMIN_ALERT'
-          }
+      // 3. Send directly to Expo Push API
+      const messages = fcmTokens.map((token: string) => ({
+        to: token,
+        sound: 'default',
+        title: `🛡️ Admin Alert: ${title}`,
+        body: body,
+        data: {
+          ...data,
+          type: 'ADMIN_ALERT'
         }
-      });
+      }));
 
-      if (funcError) console.warn('Admin notification edge function error:', funcError);
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify(messages)
+      });
 
       return { success: true, count: fcmTokens.length };
     } catch (error) {
       console.error('Error in notifyAdmins:', error);
       // We don't want to block the main flow if admin notification fails
+      return { success: false, error };
+    }
+  },
+  broadcastToAll: async (title: string, body: string, data?: any) => {
+    try {
+      console.log('[Notification] Initiating global broadcast to ALL users');
+
+      // 1. Use SECURITY DEFINER RPC to fetch ALL active tokens (bypasses RLS)
+      //    Passing null fetches tokens for all users, not just the current user
+      const { data: tokens, error: tokenError } = await supabase.rpc(
+        'get_tokens_for_notification',
+        { p_user_ids: null }
+      );
+
+      if (tokenError) {
+        console.error('[Notification] Error fetching all tokens (RPC):', tokenError);
+        throw tokenError;
+      }
+
+      if (!tokens || tokens.length === 0) {
+        console.warn('[Notification] No active tokens found for broadcast.');
+        return { success: true, count: 0 };
+      }
+
+      const fcmTokens = tokens.map((t: any) => t.fcm_token);
+      console.log(`[Notification] Sending global broadcast to ${fcmTokens.length} users...`);
+
+      // 2. Send directly to Expo Push API
+      const messages = fcmTokens.map((token: string) => ({
+        to: token,
+        sound: 'default',
+        title: title,
+        body: body,
+        data: {
+          ...data,
+          type: 'GLOBAL_BROADCAST'
+        }
+      }));
+
+      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify(messages)
+      });
+
+      if (!res.ok) {
+        throw new Error(`Expo Push error: ${res.statusText}`);
+      }
+
+      return { success: true, count: tokens.length };
+    } catch (error) {
+      console.error('[Notification] Global broadcast failed:', error);
       return { success: false, error };
     }
   }
