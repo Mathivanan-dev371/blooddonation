@@ -11,7 +11,7 @@ DROP TABLE IF EXISTS public.fcm_tokens CASCADE;
 
 CREATE TABLE public.fcm_tokens (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
     fcm_token text NOT NULL UNIQUE,          -- ← frontend reads this as fcm_token
     device_type text DEFAULT 'mobile',        -- 'mobile', 'web', etc.
     last_used_at timestamp with time zone DEFAULT now(),
@@ -80,13 +80,27 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
+DECLARE
+    current_uid uuid;
 BEGIN
-    INSERT INTO public.fcm_tokens (user_id, fcm_token, device_type, last_used_at, is_active)
-    VALUES (auth.uid(), expo_token, 'mobile', now(), true)
-    ON CONFLICT (fcm_token) DO UPDATE
-        SET user_id      = EXCLUDED.user_id,
-            last_used_at = now(),
-            is_active    = true;
+    current_uid := auth.uid();
+    
+    IF current_uid IS NULL THEN
+        -- Unauthenticated user: Insert without user_id, or just update timestamp if exists
+        INSERT INTO public.fcm_tokens (fcm_token, device_type, last_used_at, is_active)
+        VALUES (expo_token, 'mobile', now(), true)
+        ON CONFLICT (fcm_token) DO UPDATE
+            SET last_used_at = now(),
+                is_active    = true;
+    ELSE
+        -- Authenticated user: Insert with user_id, or update to link user_id if token already exists
+        INSERT INTO public.fcm_tokens (user_id, fcm_token, device_type, last_used_at, is_active)
+        VALUES (current_uid, expo_token, 'mobile', now(), true)
+        ON CONFLICT (fcm_token) DO UPDATE
+            SET user_id      = EXCLUDED.user_id,
+                last_used_at = now(),
+                is_active    = true;
+    END IF;
 END;
 $$;
 
