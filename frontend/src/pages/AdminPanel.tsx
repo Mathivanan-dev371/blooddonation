@@ -31,6 +31,14 @@ const AdminPanel = () => {
   });
   const [processingRegistry, setProcessingRegistry] = useState(false);
   const [sendingNotify, setSendingNotify] = useState<string | null>(null);
+  
+  // Direct User Notify Modal State
+  const [showDirectModal, setShowDirectModal] = useState(false);
+  const [directTarget, setDirectTarget] = useState<any>(null);
+  const [directTitle, setDirectTitle] = useState('');
+  const [directBody, setDirectBody] = useState('');
+  const [sendingDirect, setSendingDirect] = useState(false);
+  const [directResult, setDirectResult] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -217,6 +225,55 @@ const AdminPanel = () => {
     navigate('/', { replace: true });
   };
 
+  const handleOpenDirectNotify = (user: any) => {
+    setDirectTarget(user);
+    setDirectTitle(`Hello ${user.studentDetails?.name?.split(' ')[0] || 'Scholar'}`);
+    setDirectBody('');
+    setDirectResult(null);
+    setShowDirectModal(true);
+  };
+
+  const handleSendDirectNotify = async () => {
+    if (!directTarget || !directTitle.trim() || !directBody.trim()) {
+      alert('Please enter both a title and message.');
+      return;
+    }
+    setSendingDirect(true);
+    setDirectResult(null);
+
+    // 📤 WIRE: Send to Native App Bridge if running in WebView
+    const webview = (window as any).ReactNativeWebView;
+    if (webview) {
+      webview.postMessage(JSON.stringify({
+        type: 'SEND_NOTIFICATION',
+        userId: directTarget.id,
+        title: directTitle.trim(),
+        body: directBody.trim()
+      }));
+      console.log('Direct notify request sent to Native Bridge');
+    }
+
+    try {
+      const result = await notificationService.notifyUser(
+        directTarget.id, 
+        directTitle.trim(), 
+        directBody.trim(),
+        { source: 'ADMIN_DIRECT' }
+      );
+      if (result.success) {
+        setDirectResult(`✅ Sent to ${result.count} device${result.count === 1 ? '' : 's'}!`);
+        setTimeout(() => setShowDirectModal(false), 2000);
+      } else {
+        setDirectResult('❌ Failed to send. Check console.');
+      }
+    } catch (err: any) {
+      console.error('Direct notify error:', err);
+      setDirectResult('❌ Error: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSendingDirect(false);
+    }
+  };
+
   const handleBroadcastAll = async () => {
     if (!broadcastTitle.trim() || !broadcastBody.trim()) {
       alert('Please enter both a title and message.');
@@ -224,6 +281,18 @@ const AdminPanel = () => {
     }
     setSendingBroadcast(true);
     setBroadcastResult(null);
+
+    // 📡 WIRE: Send to Native App Bridge if running in WebView
+    const webview = (window as any).ReactNativeWebView;
+    if (webview) {
+      webview.postMessage(JSON.stringify({
+        type: 'BROADCAST_NOTIFICATION',
+        title: broadcastTitle.trim(),
+        body: broadcastBody.trim()
+      }));
+      console.log('Broadcast request sent to Native Bridge');
+    }
+
     try {
       const result = await notificationService.broadcastToAll(broadcastTitle.trim(), broadcastBody.trim());
       if (result.success) {
@@ -341,6 +410,61 @@ const AdminPanel = () => {
                 {sendingBroadcast ? '⏳ Sending...' : '🚀 Send to All'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Direct Notify Modal ── */}
+      {showDirectModal && (
+        <div className="fixed inset-0 z-[201] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 space-y-6 border border-indigo-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">🔔 Notify Scholar</h3>
+                <p className="text-[10px] text-indigo-500 font-bold mt-1 uppercase tracking-widest">Target: {directTarget?.studentDetails?.name}</p>
+              </div>
+              <button
+                onClick={() => setShowDirectModal(false)}
+                className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={directTitle}
+                onChange={(e) => setDirectTitle(e.target.value)}
+                placeholder="Notification Title"
+                className="w-full px-4 py-3 bg-indigo-50/30 border border-indigo-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-bold text-sm"
+              />
+              <textarea
+                value={directBody}
+                onChange={(e) => setDirectBody(e.target.value)}
+                placeholder="Message for this specific scholar..."
+                rows={4}
+                className="w-full px-4 py-3 bg-indigo-50/30 border border-indigo-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 font-bold text-sm resize-none"
+              />
+            </div>
+
+            {directResult && (
+              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${
+                directResult.startsWith('✅') ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-600'
+              }`}>
+                {directResult}
+              </div>
+            )}
+
+            <button
+              onClick={handleSendDirectNotify}
+              disabled={sendingDirect || !directTitle.trim() || !directBody.trim()}
+              className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all"
+            >
+              {sendingDirect ? '⏳ Sending...' : '🚀 Send Push Notification'}
+            </button>
           </div>
         </div>
       )}
@@ -608,15 +732,26 @@ const AdminPanel = () => {
                             <p className="text-xs font-black text-indigo-600">{u.studentDetails?.phoneNumber}</p>
                           </td>
                           <td className="px-6 py-5 text-center">
-                            <button
-                              onClick={() => handleDeleteUser(u.id, u.studentDetails?.name || u.username)}
-                              className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all rounded-lg"
-                              title="Delete Account"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                onClick={() => handleOpenDirectNotify(u)}
+                                className="p-2 hover:bg-indigo-50 text-slate-300 hover:text-indigo-600 transition-all rounded-lg"
+                                title="Notify Scholar"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(u.id, u.studentDetails?.name || u.username)}
+                                className="p-2 hover:bg-red-50 text-slate-300 hover:text-red-500 transition-all rounded-lg"
+                                title="Delete Account"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -677,7 +812,13 @@ const AdminPanel = () => {
                           <span className="text-slate-500">Contact</span>
                           <span className="text-indigo-400">{u.studentDetails?.phoneNumber}</span>
                         </div>
-                        <div className="pt-4 border-t border-slate-700/50 flex justify-end">
+                        <div className="pt-4 border-t border-slate-700/50 flex justify-end gap-2">
+                          <button
+                            onClick={() => handleOpenDirectNotify(u)}
+                            className="flex items-center space-x-2 px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-all border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest"
+                          >
+                            <span>🔔 Notify</span>
+                          </button>
                           <button
                             onClick={() => handleDeleteUser(u.id, u.studentDetails?.name || u.username)}
                             className="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all border border-red-500/20 text-[10px] font-black uppercase tracking-widest"
@@ -685,7 +826,7 @@ const AdminPanel = () => {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
-                            <span>Delete Scholar</span>
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>

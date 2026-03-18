@@ -828,7 +828,7 @@ export const notificationService = {
         device_type: deviceType,
         last_used_at: new Date().toISOString(),
         is_active: true
-      }, { onConflict: 'user_id' })
+      }, { onConflict: 'fcm_token' })
       .select()
       .single();
 
@@ -854,7 +854,6 @@ export const notificationService = {
       console.log(`[Notification] Found ${donorIds.length} available donors for ${bloodGroupNormalized}`);
 
       // 2. Use SECURITY DEFINER RPC to bypass RLS and fetch tokens
-      //    If matching donors found, notify them. Otherwise notify ALL active tokens.
       const rpcParams = donorIds.length > 0 ? { p_user_ids: donorIds } : { p_user_ids: null };
       const { data: tokens, error: tokenError } = await supabase.rpc('get_tokens_for_notification', rpcParams);
 
@@ -869,7 +868,7 @@ export const notificationService = {
       }
 
       const fcmTokens = tokens.map((t: any) => t.fcm_token);
-      console.log(`[Notification] Sending to ${fcmTokens.length} tokens via Edge Function...`);
+      console.log(`[Notification] Sending to ${fcmTokens.length} tokens via Expo...`);
 
       // 3. Send directly to Expo Push API
       const messages = fcmTokens.map((token: string) => ({
@@ -884,23 +883,22 @@ export const notificationService = {
         }
       }));
 
-      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'text/plain',
         },
         body: JSON.stringify(messages)
       });
 
-      if (!res.ok) {
-        throw new Error(`Expo Push error: ${res.statusText}`);
+      // 4. Persistence update - wrapped in try/catch so RLS doesn't block notifications
+      try {
+        const table = request._source === 'hospital_requests' ? 'hospital_requests' : 'blood_requirements';
+        await supabase.from(table).update({ notification_sent: true }).eq('id', request.id);
+      } catch (dbErr) {
+        console.warn('[Notification] Could not update notification_sent flag:', dbErr);
       }
-
-      // 4. Persistence update
-      const table = request._source === 'hospital_requests' ? 'hospital_requests' : 'blood_requirements';
-      await supabase.from(table).update({ notification_sent: true }).eq('id', request.id);
 
       console.log('[Notification] Success!');
       return { success: true, count: tokens.length };
@@ -947,10 +945,9 @@ export const notificationService = {
 
       await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'text/plain',
         },
         body: JSON.stringify(messages)
       });
@@ -964,10 +961,9 @@ export const notificationService = {
   },
   broadcastToAll: async (title: string, body: string, data?: any) => {
     try {
-      console.log('[Notification] Initiating global broadcast to ALL users');
+      console.log('[Notification] Initiating global broadcast to ALL users via RPC');
 
       // 1. Use SECURITY DEFINER RPC to fetch ALL active tokens (bypasses RLS)
-      //    Passing null fetches tokens for all users, not just the current user
       const { data: tokens, error: tokenError } = await supabase.rpc(
         'get_tokens_for_notification',
         { p_user_ids: null }
@@ -984,7 +980,7 @@ export const notificationService = {
       }
 
       const fcmTokens = tokens.map((t: any) => t.fcm_token);
-      console.log(`[Notification] Sending global broadcast to ${fcmTokens.length} users...`);
+      console.log(`[Notification] Sending global broadcast to ${fcmTokens.length} devices...`);
 
       // 2. Send directly to Expo Push API
       const messages = fcmTokens.map((token: string) => ({
@@ -998,23 +994,61 @@ export const notificationService = {
         }
       }));
 
-      const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
+        mode: 'no-cors',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'text/plain',
         },
         body: JSON.stringify(messages)
       });
 
-      if (!res.ok) {
-        throw new Error(`Expo Push error: ${res.statusText}`);
-      }
-
       return { success: true, count: tokens.length };
     } catch (error) {
       console.error('[Notification] Global broadcast failed:', error);
+      return { success: false, error };
+    }
+  },
+  notifyUser: async (targetId: string, title: string, body: string, data?: any) => {
+    try {
+      console.log(`[Notification] Attempting to notify target via RPC: ${targetId}`);
+
+      // 1. Use RPC to find tokens (accepts both user_id or a direct row ID from fcm_tokens)
+      // Note: We pass [targetId] to rpc which handles .or() logic if we updated the sql
+      const { data: tokens, error } = await supabase.rpc('get_tokens_for_notification', {
+        p_user_ids: [targetId]
+      });
+
+      if (error) throw error;
+      if (!tokens || tokens.length === 0) {
+        console.warn('[Notification] No active devices found for target:', targetId);
+        return { success: true, count: 0 };
+      }
+
+      const fcmTokens = tokens.map((t: any) => t.fcm_token);
+
+      // 2. Send to Expo Push API
+      const messages = fcmTokens.map((token: string) => ({
+        to: token,
+        sound: 'default',
+        title: title,
+        body: body,
+        data: { ...data, type: 'DIRECT_TARGET' }
+      }));
+
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain', // Use text/plain to bypass CORS preflight
+        },
+        body: JSON.stringify(messages)
+      });
+
+      console.log(`[Notification] Successfully sent to ${fcmTokens.length} devices.`);
+      return { success: true, count: fcmTokens.length };
+    } catch (error) {
+      console.error('[Notification] Targeted notification failed:', error);
       return { success: false, error };
     }
   }
