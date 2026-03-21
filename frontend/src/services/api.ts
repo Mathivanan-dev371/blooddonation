@@ -83,7 +83,7 @@ export const authService = {
     if (manualAdmin && !manualAdminError) {
       return {
         user: {
-          id: manualAdmin.id,
+          id: manualAdmin.id || manualAdmin.username, // Fallback to username if id isn't set
           username: manualAdmin.username,
           role: 'ADMIN',
           trustScore: 100,
@@ -104,7 +104,7 @@ export const authService = {
     if (manualHosp && !manualHospError) {
       return {
         user: {
-          id: manualHosp.id,
+          id: manualHosp.id || manualHosp.email, // Fallback to email if id isn't set
           email: manualHosp.email,
           username: manualHosp.hospital_name,
           role: 'HOSPITAL',
@@ -816,46 +816,35 @@ export const requirementsService = {
 };
 
 export const notificationService = {
-  saveToken: async (token: string, deviceType: string = 'web') => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Authentication required to save notification token');
+  saveToken: async (token: string, deviceType: string = 'web', p_user_id?: string) => {
+    // 1. Get current Supabase session if no user_id is provided
+    let finalId = p_user_id;
+    if (!finalId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      finalId = user?.id;
+    }
 
-    const { data, error } = await supabase
-      .from('fcm_tokens')
-      .upsert({
-        user_id: user.id,
-        fcm_token: token,
-        device_type: deviceType,
-        last_used_at: new Date().toISOString(),
-        is_active: true
-      }, { onConflict: 'fcm_token' })
-      .select()
-      .single();
+    if (!finalId) throw new Error('Authentication required to save notification token');
+
+    // 2. Call the master RPC that handles both fcm_tokens table AND fcm_admin column updates
+    const { data, error } = await supabase.rpc('save_fcm_token', {
+      expo_token: token,
+      p_user_id: finalId,
+      p_device_type: deviceType
+    });
 
     if (error) handleError(error);
     return data;
   },
   sendRequestNotification: async (request: any) => {
     try {
-      console.log('[Notification] Starting notification process for:', request.bloodGroup);
+      console.log('[Notification] Starting broadcast for blood request:', request.bloodGroup);
 
-      // 1. Fetch matching donor IDs
-      const bloodGroupNormalized = request.bloodGroup?.trim();
-      const { data: donors, error: donorErr } = await supabase
-        .from('profiles')
-        .select('id, student_details!inner(blood_group)')
-        .eq('role', 'STUDENT')
-        .eq('is_available', true)
-        .ilike('student_details.blood_group', bloodGroupNormalized);
-
-      if (donorErr) console.error('[Notification] Profile fetch error:', donorErr);
-
-      const donorIds = donors?.map((d: any) => d.id) || [];
-      console.log(`[Notification] Found ${donorIds.length} available donors for ${bloodGroupNormalized}`);
-
-      // 2. Use SECURITY DEFINER RPC to bypass RLS and fetch tokens
-      const rpcParams = donorIds.length > 0 ? { p_user_ids: donorIds } : { p_user_ids: null };
-      const { data: tokens, error: tokenError } = await supabase.rpc('get_tokens_for_notification', rpcParams);
+      // 1. Fetch ALL active expo tokens (Global Broadcast for this request)
+      // Passing null to get_tokens_for_notification returns all active tokens
+      const { data: tokens, error: tokenError } = await supabase.rpc('get_tokens_for_notification', {
+        p_user_ids: null
+      });
 
       if (tokenError) {
         console.error('[Notification] Token fetch error (RPC):', tokenError);
@@ -868,18 +857,27 @@ export const notificationService = {
       }
 
       const fcmTokens = tokens.map((t: any) => t.fcm_token);
-      console.log(`[Notification] Sending to ${fcmTokens.length} tokens via Expo...`);
+      console.log(`[Notification] Sending request details to ${fcmTokens.length} tokens...`);
+
+      // 2. Construct enriched message
+      const details = [
+        `Hospital: ${request.hospitalName}`,
+        `Patient: ${request.patientName}${request.patientAge ? ` (${request.patientAge}y)` : ''}`,
+        `Purpose: ${request.purpose || 'Emergency'}`,
+        `Units: ${request.quantity}`
+      ].join('\n');
 
       // 3. Send directly to Expo Push API
       const messages = fcmTokens.map((token: string) => ({
         to: token,
         sound: 'default',
-        title: `🩸 Urgent: ${request.bloodGroup} Required`,
-        body: `Hospital: ${request.hospitalName}\nPatient: ${request.patientName}\nUnits: ${request.quantity}`,
+        title: `🚨 Urgent: ${request.bloodGroup} Blood Required`,
+        body: details,
         data: {
           requestId: request.id,
-          source: request._source,
-          type: 'BLOOD_REQUEST'
+          source: request._source || 'hospital_requests',
+          type: 'BLOOD_REQUEST',
+          bloodGroup: request.bloodGroup
         }
       }));
 
@@ -892,7 +890,7 @@ export const notificationService = {
         body: JSON.stringify(messages)
       });
 
-      // 4. Persistence update - wrapped in try/catch so RLS doesn't block notifications
+      // 4. Persistence update
       try {
         const table = request._source === 'hospital_requests' ? 'hospital_requests' : 'blood_requirements';
         await supabase.from(table).update({ notification_sent: true }).eq('id', request.id);
@@ -900,7 +898,7 @@ export const notificationService = {
         console.warn('[Notification] Could not update notification_sent flag:', dbErr);
       }
 
-      console.log('[Notification] Success!');
+      console.log('[Notification] Broadcast complete!');
       return { success: true, count: tokens.length };
     } catch (error) {
       console.error('[Notification] Fatal error:', error);
@@ -909,38 +907,52 @@ export const notificationService = {
   },
   notifyAdmins: async (title: string, body: string, data?: any) => {
     try {
-      // 1. Get all admin user IDs
-      const { data: admins, error: adminError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('role', 'ADMIN');
+      console.log('[Notification] Starting Admin alert broadcast...');
 
-      if (adminError) throw adminError;
-      if (!admins || admins.length === 0) return { success: true, count: 0 };
+      // 1. Get ALL Admin Identifiers (Supabase Role AND Manual Accounts)
+      const [profilesRes, manualRes] = await Promise.all([
+        supabase.from('profiles').select('id').eq('role', 'ADMIN'),
+        supabase.from('admin_accounts').select('id, username')
+      ]);
 
-      const adminIds = admins.map((a: any) => a.id);
+      if (profilesRes.error) throw profilesRes.error;
+      if (manualRes.error) throw manualRes.error;
 
-      // 2. Use SECURITY DEFINER RPC to bypass RLS and get tokens for admins
+      // Collect all possible IDs (uuid strings, usernames, etc)
+      const adminIds = new Set<string>();
+      (profilesRes.data || []).forEach(a => adminIds.add(a.id));
+      (manualRes.data || []).forEach(a => {
+        if (a.id) adminIds.add(String(a.id));
+        if (a.username) adminIds.add(String(a.username));
+      });
+
+      if (adminIds.size === 0) {
+        console.warn('[Notification] No admin accounts found to notify.');
+        return { success: true, count: 0 };
+      }
+
+      // 2. Use the Master RPC to fetch ALL tokens (Handles all tables)
       const { data: tokens, error: tokenError } = await supabase.rpc(
         'get_tokens_for_notification',
-        { p_user_ids: adminIds }
+        { p_user_ids: Array.from(adminIds) }
       );
 
       if (tokenError) throw tokenError;
-      if (!tokens || tokens.length === 0) return { success: true, count: 0 };
+      if (!tokens || tokens.length === 0) {
+        console.warn('[Notification] No active admin tokens found.');
+        return { success: true, count: 0 };
+      }
 
       const fcmTokens = tokens.map((t: any) => t.fcm_token);
+      console.log(`[Notification] Relaying alert to ${fcmTokens.length} Admin devices...`);
 
-      // 3. Send directly to Expo Push API
+      // 3. Send to Expo Push API
       const messages = fcmTokens.map((token: string) => ({
         to: token,
         sound: 'default',
         title: `🛡️ Admin Alert: ${title}`,
         body: body,
-        data: {
-          ...data,
-          type: 'ADMIN_ALERT'
-        }
+        data: { ...data, type: 'ADMIN_ALERT' }
       }));
 
       await fetch('https://exp.host/--/api/v2/push/send', {
@@ -954,8 +966,7 @@ export const notificationService = {
 
       return { success: true, count: fcmTokens.length };
     } catch (error) {
-      console.error('Error in notifyAdmins:', error);
-      // We don't want to block the main flow if admin notification fails
+      console.error('[Notification] Admin notify failed:', error);
       return { success: false, error };
     }
   },

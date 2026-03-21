@@ -62,20 +62,40 @@ END;
 $$;
 
 -- 5. RPC to get tokens (fallback for frontend)
+-- Update: Unified Token Fetching RPC
+-- Fetch tokens from standard fcm_tokens table AND manual admin tables.
+DROP FUNCTION IF EXISTS public.get_tokens_for_notification(uuid[]);
+DROP FUNCTION IF EXISTS public.get_tokens_for_notification(text[]);
+
 CREATE OR REPLACE FUNCTION public.get_tokens_for_notification(
-    p_user_ids uuid[] DEFAULT NULL
+    p_user_ids text[] DEFAULT NULL
 )
-RETURNS TABLE(fcm_token text, user_id uuid)
+RETURNS TABLE(fcm_token text, user_id text)
 LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
     IF p_user_ids IS NULL THEN
-        RETURN QUERY SELECT ft.fcm_token, ft.user_id FROM public.fcm_tokens ft WHERE ft.is_active = true;
+        -- Global Broadcast: Return ALL tokens from all sources
+        RETURN QUERY 
+            SELECT ft.fcm_token, ft.user_id::text FROM public.fcm_tokens ft WHERE ft.is_active = true
+            UNION
+            SELECT aa.fcm_admin, aa.id::text FROM public.admin_accounts aa WHERE aa.fcm_admin IS NOT NULL
+            UNION
+            SELECT apt.fcm_token, apt.admin_id FROM public.admin_push_tokens apt;
     ELSE
-        RETURN QUERY SELECT ft.fcm_token, ft.user_id FROM public.fcm_tokens ft 
-        WHERE (ft.user_id = ANY(p_user_ids) OR ft.id = ANY(p_user_ids)) 
-        AND ft.is_active = true;
+        -- Targeted: Match against standard tokens, admin_accounts, and admin_push_tokens
+        RETURN QUERY 
+            SELECT ft.fcm_token, ft.user_id::text FROM public.fcm_tokens ft 
+            WHERE (ft.user_id::text = ANY(p_user_ids) OR ft.id::text = ANY(p_user_ids)) 
+              AND ft.is_active = true
+            UNION
+            SELECT aa.fcm_admin, aa.id::text FROM public.admin_accounts aa 
+            WHERE (aa.id::text = ANY(p_user_ids) OR aa.username = ANY(p_user_ids))
+              AND aa.fcm_admin IS NOT NULL
+            UNION
+            SELECT apt.fcm_token, apt.admin_id FROM public.admin_push_tokens apt
+            WHERE (apt.admin_id = ANY(p_user_ids));
     END IF;
 END;
 $$;

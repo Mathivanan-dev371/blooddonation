@@ -97,8 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const tokenToSave = rnFcmToken || localStorage.getItem('rn_fcm_token');
       if (user && tokenToSave) {
         try {
-          console.log('Syncing FCM token for user:', user.id);
-          await notificationService.saveToken(tokenToSave, 'android');
+          console.log(`[Auth] Syncing FCM token for ${user.role}:`, user.id);
+          await notificationService.saveToken(tokenToSave, 'android', user.id);
         } catch (error) {
           console.error('Error syncing FCM token:', error);
         }

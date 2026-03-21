@@ -6,7 +6,6 @@ import { supabase } from '../services/supabase';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +30,7 @@ const AdminPanel = () => {
   });
   const [processingRegistry, setProcessingRegistry] = useState(false);
   const [sendingNotify, setSendingNotify] = useState<string | null>(null);
-  
+
   // Direct User Notify Modal State
   const [showDirectModal, setShowDirectModal] = useState(false);
   const [directTarget, setDirectTarget] = useState<any>(null);
@@ -130,7 +129,7 @@ const AdminPanel = () => {
       setSendingNotify(req.id);
       try {
         const result = await notificationService.sendRequestNotification(req);
-        alert(`Notifications sent to ${result?.count || 0} matching donors!`);
+        alert(`Notifications sent to ${result?.count || 0} users!`);
         loadData();
       } catch (error) {
         console.error('Failed to send notifications:', error);
@@ -220,11 +219,6 @@ const AdminPanel = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/', { replace: true });
-  };
-
   const handleOpenDirectNotify = (user: any) => {
     setDirectTarget(user);
     setDirectTitle(`Hello ${user.studentDetails?.name?.split(' ')[0] || 'Scholar'}`);
@@ -255,8 +249,8 @@ const AdminPanel = () => {
 
     try {
       const result = await notificationService.notifyUser(
-        directTarget.id, 
-        directTitle.trim(), 
+        directTarget.id,
+        directTitle.trim(),
         directBody.trim(),
         { source: 'ADMIN_DIRECT' }
       );
@@ -386,11 +380,10 @@ const AdminPanel = () => {
             </div>
 
             {broadcastResult && (
-              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${
-                broadcastResult.startsWith('✅')
-                  ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                  : 'bg-rose-50 border-rose-100 text-rose-600'
-              }`}>
+              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${broadcastResult.startsWith('✅')
+                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                : 'bg-rose-50 border-rose-100 text-rose-600'
+                }`}>
                 {broadcastResult}
               </div>
             )}
@@ -451,9 +444,8 @@ const AdminPanel = () => {
             </div>
 
             {directResult && (
-              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${
-                directResult.startsWith('✅') ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-600'
-              }`}>
+              <div className={`px-4 py-3 rounded-2xl text-sm font-bold border ${directResult.startsWith('✅') ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-rose-50 border-rose-100 text-rose-600'
+                }`}>
                 {directResult}
               </div>
             )}
@@ -519,12 +511,7 @@ const AdminPanel = () => {
                 <span>📢</span>
                 <span>Notify All</span>
               </button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl border border-red-100 transition-all font-black text-[10px] uppercase tracking-wider"
-              >
-                Logout
-              </button>
+
             </div>
           </div>
         </div>
