@@ -896,9 +896,26 @@ const AdminPanel = () => {
                         <p className="text-[8px] font-black text-slate-400 uppercase">Access Info</p>
                         <p className="text-xs font-bold text-indigo-900">{h.email}</p>
                       </div>
-                      <div className="flex justify-between items-center pt-1">
+                      <div className="flex justify-between items-center border-b border-purple-100 pb-2">
                         <p className="text-[8px] font-black text-slate-400 uppercase">Contact</p>
                         <p className="text-xs font-black text-slate-700">{h.contact_number || 'No Phone'}</p>
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <div className="flex items-center space-x-1">
+                          <div className={`w-1.5 h-1.5 rounded-full ${h.fcm_hospital || h.expo_token ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></div>
+                          <p className="text-[8px] font-black text-slate-400 uppercase">Device {h.fcm_hospital || h.expo_token ? 'Ready' : 'Offline'}</p>
+                        </div>
+                        { (h.fcm_hospital || h.expo_token) && (
+                          <button 
+                            onClick={() => {
+                              setDirectTarget({ id: h.id, studentDetails: { name: h.hospital_name } } as any);
+                              setShowDirectModal(true);
+                            }}
+                            className="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2 py-1 rounded text-[7px] font-black uppercase tracking-widest transition-all"
+                          >
+                            🔔 Notify
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

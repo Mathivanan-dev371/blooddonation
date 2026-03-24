@@ -113,13 +113,20 @@ const HospitalRequests = () => {
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 tracking-tight uppercase leading-tight">Blood Request</h1>
             <p className="text-purple-400 font-bold text-xs md:text-[10px] tracking-[0.2em] mt-1 md:mt-2 uppercase">SONA BLOODLINE</p>
           </div>
-          <div className="order-1 md:order-2 flex justify-center">
+          <div className="order-1 md:order-2 flex flex-col items-center gap-3">
             <div className="h-16 w-16 md:h-20 md:w-20 rounded-2xl overflow-hidden shadow-lg border-4 border-white transform hover:rotate-3 transition-transform">
               <img
                 src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTpklT3qZjcOxuDyBvvkN_BgA4xIw_tXZKdXlYmpSOfTlI8fAnHiZDGbKc"
                 alt="Hospital"
                 className="w-full h-full object-cover"
               />
+            </div>
+            {/* Push Connection Status */}
+            <div className="flex items-center space-x-1.5 px-3 py-1 bg-white border border-purple-100 rounded-full shadow-sm">
+              <div className={`w-1.5 h-1.5 rounded-full ${localStorage.getItem('rn_fcm_token') ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-slate-300'}`}></div>
+              <span className="text-[7px] font-black uppercase tracking-widest text-slate-400">
+                Push {localStorage.getItem('rn_fcm_token') ? 'Active' : 'Disconnected'}
+              </span>
             </div>
           </div>
         </div>

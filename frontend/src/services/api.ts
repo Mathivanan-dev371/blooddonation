@@ -817,7 +817,7 @@ export const requirementsService = {
 };
 
 export const notificationService = {
-  saveToken: async (token: string, deviceType: string = 'web', p_user_id?: string) => {
+  saveToken: async (token: string, deviceType: string = 'web', p_user_id?: string, p_role?: string) => {
     // 1. Get current Supabase session if no user_id is provided
     let finalId = p_user_id;
     if (!finalId) {
@@ -828,14 +828,30 @@ export const notificationService = {
     if (!finalId) throw new Error('Authentication required to save notification token');
 
     // 2. Call the master RPC that handles both fcm_tokens table AND fcm_admin column updates
-    const { data, error } = await supabase.rpc('save_fcm_token', {
-      expo_token: token,
-      p_user_id: finalId,
-      p_device_type: deviceType
-    });
+    try {
+      console.log(`[Notification] Requesting token save for ID: ${finalId}, Role: ${p_role}`);
+      const { data, error } = await supabase.rpc('save_fcm_token', {
+        p_expo_token: token,
+        p_user_id: finalId,
+        p_role: p_role || 'STUDENT',
+        p_device_type: deviceType
+      });
 
-    if (error) handleError(error);
-    return data;
+      if (error) {
+        console.error('❌ Failed to save FCM token:', error.message);
+        if (window.confirm(`❌ Sync Failed: ${error.message}\nTry again?`)) {
+           // recursive retry logic or just let user know
+        }
+        throw error;
+      }
+      
+      console.log('✅ [Notification] Token saved successfully for ID:', finalId);
+      // alert(`✅ [Sync Success] User ID: ${finalId}`);
+      return data;
+    } catch (err: any) {
+      console.error('RPC Error:', err);
+      throw err;
+    }
   },
   sendRequestNotification: async (request: any) => {
     try {

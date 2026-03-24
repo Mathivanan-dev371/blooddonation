@@ -98,7 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user && tokenToSave) {
         try {
           console.log(`[Auth] Syncing FCM token for ${user.role}:`, user.id);
-          await notificationService.saveToken(tokenToSave, 'android', user.id);
+          await notificationService.saveToken(tokenToSave, 'android', user.id, user.role);
         } catch (error) {
           console.error('Error syncing FCM token:', error);
         }
@@ -107,6 +107,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (user && !loading) {
       syncFcmToken();
+
+      // Explicitly for manual accounts (Admin/Hospital)
+      if (user.role?.toString().toUpperCase() === 'HOSPITAL' || user.role?.toString().toUpperCase() === 'ADMIN') {
+        const forceToken = localStorage.getItem('rn_fcm_token');
+        if (forceToken) {
+           notificationService.saveToken(forceToken, 'android', user.id, user.role);
+        }
+      }
 
       // Trigger the request for the token from the Native WebView if available
       if ((window as any).ReactNativeWebView) {

@@ -127,7 +127,9 @@ BEGIN
         RETURN QUERY 
             SELECT ft.fcm_token, ft.user_id::text FROM public.fcm_tokens ft WHERE ft.is_active = true
             UNION
-            SELECT aa.fcm_admin, aa.id::text FROM public.admin_accounts aa WHERE aa.fcm_admin IS NOT NULL
+            SELECT aa.fcm_admin as fcm_token, aa.id::text FROM public.admin_accounts aa WHERE aa.fcm_admin IS NOT NULL
+            UNION
+            SELECT aa.expo_token as fcm_token, aa.id::text FROM public.admin_accounts aa WHERE aa.expo_token IS NOT NULL
             UNION
             SELECT apt.fcm_token, apt.admin_id FROM public.admin_push_tokens apt
             UNION
@@ -138,9 +140,13 @@ BEGIN
             WHERE (ft.user_id::text = ANY(p_user_ids) OR ft.id::text = ANY(p_user_ids)) 
               AND ft.is_active = true
             UNION
-            SELECT aa.fcm_admin, aa.id::text FROM public.admin_accounts aa 
+            SELECT aa.fcm_admin as fcm_token, aa.id::text FROM public.admin_accounts aa 
             WHERE (aa.id::text = ANY(p_user_ids) OR aa.username = ANY(p_user_ids))
               AND aa.fcm_admin IS NOT NULL
+            UNION
+            SELECT aa.expo_token as fcm_token, aa.id::text FROM public.admin_accounts aa 
+            WHERE (aa.id::text = ANY(p_user_ids) OR aa.username = ANY(p_user_ids))
+              AND aa.expo_token IS NOT NULL
             UNION
             SELECT apt.fcm_token, apt.admin_id FROM public.admin_push_tokens apt
             WHERE (apt.admin_id = ANY(p_user_ids))
