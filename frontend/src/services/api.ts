@@ -923,60 +923,44 @@ export const notificationService = {
   },
   notifyAdmins: async (title: string, body: string, data?: any) => {
     try {
-      console.log('[Notification] Starting Admin alert broadcast...');
+      console.log('[Notification] Starting Admin alert broadcast using Master RPC...');
 
-      // 1. Get ALL Admin Identifiers (Supabase Role AND Manual Accounts)
-      const [profilesRes, manualRes] = await Promise.all([
-        supabase.from('profiles').select('id').eq('role', 'ADMIN'),
-        supabase.from('admin_accounts').select('id, username')
-      ]);
-
-      if (profilesRes.error) throw profilesRes.error;
-      if (manualRes.error) throw manualRes.error;
-
-      // Collect all possible IDs (uuid strings, usernames, etc)
-      const adminIds = new Set<string>();
-      (profilesRes.data || []).forEach(a => adminIds.add(a.id));
-      (manualRes.data || []).forEach(a => {
-        if (a.id) adminIds.add(String(a.id));
-        if (a.username) adminIds.add(String(a.username));
-      });
-
-      if (adminIds.size === 0) {
-        console.warn('[Notification] No admin accounts found to notify.');
-        return { success: true, count: 0 };
-      }
-
-      // 2. Use the Master RPC to fetch ALL tokens (Handles all tables)
+      // 1. Fetch EVERYTHING categorized as ADMIN in the database
       const { data: tokens, error: tokenError } = await supabase.rpc(
         'get_tokens_for_notification',
-        { p_user_ids: Array.from(adminIds) }
+        { 
+          p_user_ids: null, 
+          p_role: 'ADMIN' 
+        }
       );
 
-      if (tokenError) throw tokenError;
+      if (tokenError) {
+        console.error('[Notification] Admin token fetch error:', tokenError);
+        return { success: false, error: tokenError };
+      }
+
       if (!tokens || tokens.length === 0) {
-        console.warn('[Notification] No active admin tokens found.');
+        console.warn('[Notification] No active admin tokens found in the database.');
         return { success: true, count: 0 };
       }
 
       const fcmTokens = tokens.map((t: any) => t.fcm_token);
-      console.log(`[Notification] Relaying alert to ${fcmTokens.length} Admin devices...`);
+      console.log(`[Notification] Relaying alert to ${fcmTokens.length} Admin device(s)...`);
 
-      // 3. Send to Expo Push API
+      // 2. Transmit to Expo
       const messages = fcmTokens.map((token: string) => ({
         to: token,
         sound: 'default',
-        title: `🛡️ Admin Alert: ${title}`,
+        title: title,
         body: body,
-        data: { ...data, type: 'ADMIN_ALERT' }
+        priority: 'high',
+        data: data || { type: 'ADMIN_ALERT' }
       }));
 
       await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(messages)
       });
 
