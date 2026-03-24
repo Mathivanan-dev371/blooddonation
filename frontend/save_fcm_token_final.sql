@@ -1,20 +1,12 @@
 -- ============================================================
--- FINAL FCM MASTER SCRIPT (MULTI-ROLL FETCH CAPABILITY)
+-- FINAL FCM MASTER SCRIPT (WITH FULL CASCADE & ADMIN TARGETING)
 -- ============================================================
 
--- 1. DROP ALL OLD VERSIONS
-DROP FUNCTION IF EXISTS public.save_fcm_token(text);
-DROP FUNCTION IF EXISTS public.save_fcm_token(text, uuid);
-DROP FUNCTION IF EXISTS public.save_fcm_token(text, uuid, text);
-DROP FUNCTION IF EXISTS public.save_fcm_token(text, text);
-DROP FUNCTION IF EXISTS public.save_fcm_token(text, text, text);
-DROP FUNCTION IF EXISTS public.save_fcm_token(text, text, text, text);
+-- 1. DROP ALL OLD VERSIONS (Using CASCADE to be 100% sure we remove ambiguity)
+DROP FUNCTION IF EXISTS public.save_fcm_token CASCADE;
+DROP FUNCTION IF EXISTS public.get_tokens_for_notification CASCADE;
 
-DROP FUNCTION IF EXISTS public.get_tokens_for_notification();
-DROP FUNCTION IF EXISTS public.get_tokens_for_notification(text[]);
-DROP FUNCTION IF EXISTS public.get_tokens_for_notification(text[], text);
-
--- 2. MASTER SAVE FUNCTION
+-- 2. CREATE MASTER SAVE FUNCTION (ROLE-AWARE)
 CREATE OR REPLACE FUNCTION public.save_fcm_token(
     p_expo_token text,
     p_user_id text,
@@ -42,7 +34,7 @@ BEGIN
         END IF;
     END IF;
 
-    -- ADMIN 👤
+    -- ADMIN 👤 (Stores in dedicated table and account)
     IF UPPER(p_role) = 'ADMIN' THEN
         UPDATE public.admin_accounts SET fcm_admin = p_expo_token, expo_token = p_expo_token WHERE (id::text = p_user_id OR username = p_user_id);
         INSERT INTO public.admin_push_tokens (admin_id, fcm_token, updated_at)
@@ -51,20 +43,19 @@ BEGIN
         RETURN;
     END IF;
 
-    -- STUDENT 🎓
+    -- STUDENT 🎓 (Profile matches)
     IF p_user_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
         found_uuid := p_user_id::uuid;
         IF EXISTS(SELECT 1 FROM public.profiles WHERE id = found_uuid) THEN
             INSERT INTO public.fcm_tokens (user_id, fcm_token, device_type, last_used_at, is_active)
             VALUES (found_uuid, p_expo_token, p_device_type, now(), true)
-            ON CONFLICT (fcm_token) DO UPDATE SET user_id = EXCLUDED.user_id, last_used_at = now();
+            ON CONFLICT (fcm_token) DO UPDATE SET last_used_at = now();
         END IF;
     END IF;
 END;
 $$;
 
--- 3. MASTER FETCH FUNCTION (ROLE-AWARE)
--- Collects tokens based on the requested role pool
+-- 3. MASTER FETCH FUNCTION (ROLE-AWARE BROADCAST)
 CREATE OR REPLACE FUNCTION public.get_tokens_for_notification(
     p_user_ids text[] DEFAULT NULL,
     p_role text DEFAULT NULL
@@ -77,19 +68,19 @@ BEGIN
     RETURN QUERY 
         WITH all_tokens AS (
             -- Student pool
-            SELECT ft.fcm_token, ft.user_id::text, 'STUDENT' as role FROM public.fcm_tokens ft WHERE ft.is_active = true
+            SELECT ft.fcm_token, ft.user_id::text as u_id, 'STUDENT' as r FROM public.fcm_tokens ft WHERE ft.is_active = true
             UNION
             -- Admin pool
-            SELECT apt.fcm_token, apt.admin_id, 'ADMIN' as role FROM public.admin_push_tokens apt
+            SELECT apt.fcm_token, apt.admin_id as u_id, 'ADMIN' as r FROM public.admin_push_tokens apt
             UNION
             -- Hospital pool
-            SELECT hpt.fcm_token, hpt.hospital_id::text, 'HOSPITAL' as role FROM public.hospital_push_tokens hpt
+            SELECT hpt.fcm_token, hpt.hospital_id::text as u_id, 'HOSPITAL' as r FROM public.hospital_push_tokens hpt
         )
-        SELECT DISTINCT ON (t.fcm_token) t.fcm_token, t.user_id
+        SELECT DISTINCT ON (t.fcm_token) t.fcm_token, t.u_id
         FROM all_tokens t
         WHERE 
-            (p_user_ids IS NULL OR t.user_id = ANY(p_user_ids))
-            AND (p_role IS NULL OR UPPER(t.role) = UPPER(p_role));
+            (p_user_ids IS NULL OR t.u_id = ANY(p_user_ids))
+            AND (p_role IS NULL OR UPPER(t.r) = UPPER(p_role));
 END;
 $$;
 

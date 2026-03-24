@@ -483,8 +483,8 @@ export const hospitalService = {
     // Notify Admins about the new hospital request
     if (result) {
       notificationService.notifyAdmins(
-        'New Hospital Request',
-        `${data.hospitalName} requested ${data.quantity} units of ${data.bloodGroup} blood.`,
+        `🚨 NEW HOSPITAL REQUEST: ${data.bloodGroup}`,
+        `${data.hospitalName} requires ${data.quantity} units for ${data.patientName || 'Emergency'}.`,
         { requestId: result.id, source: 'hospital_requests' }
       ).catch(err => console.error('Failed to notify admins:', err));
     }

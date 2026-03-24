@@ -112,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (user.role?.toString().toUpperCase() === 'HOSPITAL' || user.role?.toString().toUpperCase() === 'ADMIN') {
         const forceToken = localStorage.getItem('rn_fcm_token');
         if (forceToken) {
-           notificationService.saveToken(forceToken, 'android', user.id, user.role);
+          notificationService.saveToken(forceToken, 'android', user.id, user.role);
         }
       }
 
