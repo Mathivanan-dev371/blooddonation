@@ -839,12 +839,11 @@ export const notificationService = {
 
       if (error) {
         console.error('❌ Failed to save FCM token:', error.message);
-        if (window.confirm(`❌ Sync Failed: ${error.message}\nTry again?`)) {
-           // recursive retry logic or just let user know
-        }
+        // Alert the user so they can provide the exact error code
+        alert('Sync Error: ' + JSON.stringify(error));
         throw error;
       }
-      
+
       console.log('✅ [Notification] Token saved successfully for ID:', finalId);
       // alert(`✅ [Sync Success] User ID: ${finalId}`);
       return data;
