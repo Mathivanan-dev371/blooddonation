@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { hospitalService } from '../services/api';
+import { hospitalService, notificationService } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 
@@ -79,6 +79,16 @@ const HospitalRequests = () => {
       };
 
       await hospitalService.createRequest(requestData, user?.id);
+
+      // 🔔 NOTIFY ADMINS: Send push notification to all administrators
+      try {
+        await notificationService.notifyAdmins(
+          `🚨 NEW HOSPITAL REQUEST: ${requestData.bloodGroup}`,
+          `${requestData.hospitalName} requires ${requestData.quantity} units for ${requestData.patientName}.`
+        );
+      } catch (pushErr) {
+        console.warn('[Push] Admin notification failed:', pushErr);
+      }
 
       setNewRequest({ bloodGroup: '', quantity: 1, patientName: '', phoneNumber: '', age: '', purpose: '' });
       alert('Blood Request sent successfully!');
