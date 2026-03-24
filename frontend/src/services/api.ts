@@ -672,14 +672,15 @@ export const hospitalService = {
     if (upsertError) handleError(upsertError);
     return upsertData;
   },
-  registerByAdmin: async (data: { hospitalName: string, email: string, password: string, location: string }) => {
+  registerByAdmin: async (data: { hospitalName: string, email: string, password: string, location: string, phoneNumber: string }) => {
     const { data: result, error } = await supabase
       .from('hospital_accounts')
       .insert({
         hospital_name: data.hospitalName,
         email: data.email,
         password: data.password,
-        location: data.location
+        location: data.location,
+        contact_number: data.phoneNumber
       })
       .select()
       .single();

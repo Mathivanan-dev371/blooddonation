@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { userService, requirementsService, hospitalService, notificationService } from '../services/api';
 import { supabase } from '../services/supabase';
 
@@ -26,7 +25,8 @@ const AdminPanel = () => {
     hospitalName: '',
     email: '',
     password: '',
-    location: ''
+    location: '',
+    phoneNumber: ''
   });
   const [processingRegistry, setProcessingRegistry] = useState(false);
   const [sendingNotify, setSendingNotify] = useState<string | null>(null);
@@ -109,7 +109,7 @@ const AdminPanel = () => {
     try {
       await hospitalService.registerByAdmin(registryForm);
       alert('Hospital registered successfully! They can now login with these credentials.');
-      setRegistryForm({ hospitalName: '', email: '', password: '', location: '' });
+      setRegistryForm({ hospitalName: '', email: '', password: '', location: '', phoneNumber: '' });
       loadRegistry();
     } catch (err: any) {
       alert('Failed to register hospital: ' + err.message);
@@ -860,6 +860,14 @@ const AdminPanel = () => {
                   value={registryForm.password}
                   onChange={(e) => setRegistryForm({ ...registryForm, password: e.target.value })}
                 />
+                <input
+                  type="tel"
+                  required
+                  className="w-full px-5 py-4 bg-purple-50/30 border border-purple-100 rounded-2xl text-slate-700 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-bold text-sm shadow-sm"
+                  placeholder="Contact Phone Number"
+                  value={registryForm.phoneNumber}
+                  onChange={(e) => setRegistryForm({ ...registryForm, phoneNumber: e.target.value })}
+                />
                 <button
                   type="submit"
                   disabled={processingRegistry}
@@ -883,9 +891,15 @@ const AdminPanel = () => {
                       </div>
                       <span className="px-2 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[8px] font-black uppercase tracking-tighter">Active</span>
                     </div>
-                    <div className="p-4 bg-purple-50/30 rounded-2xl border border-purple-100/50">
-                      <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Access Info</p>
-                      <p className="text-xs font-bold text-indigo-900">{h.email}</p>
+                    <div className="p-4 bg-purple-50/30 rounded-2xl border border-purple-100/50 space-y-2">
+                      <div className="flex justify-between items-center border-b border-purple-100 pb-2">
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Access Info</p>
+                        <p className="text-xs font-bold text-indigo-900">{h.email}</p>
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <p className="text-[8px] font-black text-slate-400 uppercase">Contact</p>
+                        <p className="text-xs font-black text-slate-700">{h.contact_number || 'No Phone'}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
